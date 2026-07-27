@@ -6,7 +6,6 @@ import { ruleStatus, latestTimestamp } from '../utils/rules';
 import { isWithinRange, nowIso, type TimeRange } from '../utils/dates';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
-import Tabs, { type TabKey } from '../components/Tabs';
 import AlertsTable, { type SortDir, type SortKey } from '../components/AlertsTable';
 import Pagination from '../components/Pagination';
 import EmptyState from '../components/EmptyState';
@@ -31,7 +30,6 @@ function nextId(existing: AlertRule[]) {
 
 export default function ManageAlertsPage() {
   const [alerts, setAlerts] = useState<AlertRule[]>(initialAlerts);
-  const [tab, setTab] = useState<TabKey>('active');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [timeRange, setTimeRange] = useState<TimeRange>({ key: '30d' });
@@ -45,18 +43,8 @@ export default function ManageAlertsPage() {
   const [formState, setFormState] = useState<{ mode: 'create' | 'edit'; rule?: AlertRule } | null>(null);
   const [ruleToDelete, setRuleToDelete] = useState<AlertRule | null>(null);
 
-  const counts = useMemo(
-    () => ({
-      active: alerts.filter((a) => ruleStatus(a) === 'active').length,
-      normal: alerts.filter((a) => ruleStatus(a) === 'normal').length,
-      all: alerts.length,
-    }),
-    [alerts],
-  );
-
-  const afterTabSearch = useMemo(() => {
+  const afterSearch = useMemo(() => {
     let list = alerts;
-    if (tab !== 'all') list = list.filter((a) => ruleStatus(a) === tab);
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       list = list.filter(
@@ -67,24 +55,29 @@ export default function ManageAlertsPage() {
       );
     }
     return list;
-  }, [alerts, tab, search]);
+  }, [alerts, search]);
 
   const serviceOptions = useMemo(
-    () => [...new Set(afterTabSearch.flatMap((r) => r.services.map((s) => s.name)))].sort(),
-    [afterTabSearch],
+    () => [...new Set(afterSearch.flatMap((r) => r.services.map((s) => s.name)))].sort(),
+    [afterSearch],
   );
   const eventTypeOptions = useMemo(
-    () => [...new Set(afterTabSearch.map((r) => metricByKey(r.metricKey).label))].sort(),
-    [afterTabSearch],
+    () => [...new Set(afterSearch.map((r) => metricByKey(r.metricKey).label))].sort(),
+    [afterSearch],
   );
 
   const filtered = useMemo(() => {
-    let list = afterTabSearch;
+    let list = afterSearch;
     if (serviceFilter.length) list = list.filter((r) => r.services.some((s) => serviceFilter.includes(s.name)));
     if (eventTypeFilter.length) list = list.filter((r) => eventTypeFilter.includes(metricByKey(r.metricKey).label));
     list = list.filter((r) => isWithinRange(latestTimestamp(r), timeRange));
 
+    // Rules with a breach happening right now always float to the top, regardless
+    // of the chosen sort column — that's the replacement for the old Active tab.
     const sorted = [...list].sort((a, b) => {
+      const activeDiff = (ruleStatus(b) === 'active' ? 1 : 0) - (ruleStatus(a) === 'active' ? 1 : 0);
+      if (activeDiff !== 0) return activeDiff;
+
       let cmp = 0;
       if (sortKey === 'name') cmp = a.ruleName.localeCompare(b.ruleName);
       else if (sortKey === 'condition') cmp = (parseFloat(a.threshold) || 0) - (parseFloat(b.threshold) || 0);
@@ -92,7 +85,7 @@ export default function ManageAlertsPage() {
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return sorted;
-  }, [afterTabSearch, serviceFilter, eventTypeFilter, timeRange, sortKey, sortDir]);
+  }, [afterSearch, serviceFilter, eventTypeFilter, timeRange, sortKey, sortDir]);
 
   const pageRules = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -104,11 +97,6 @@ export default function ManageAlertsPage() {
     setServiceFilter([]);
     setEventTypeFilter([]);
     setTimeRange({ key: '30d' });
-    setPage(1);
-  };
-
-  const changeTab = (key: TabKey) => {
-    setTab(key);
     setPage(1);
   };
 
@@ -133,7 +121,6 @@ export default function ManageAlertsPage() {
     } else {
       const newRule: AlertRule = { ...data, id: nextId(alerts), history: [], createdAt: nowIso() };
       setAlerts((prev) => [newRule, ...prev]);
-      setTab('all');
       setPage(1);
       push(`${data.ruleName} created successfully`);
     }
@@ -154,19 +141,9 @@ export default function ManageAlertsPage() {
     setSelectedRule((prev) => (prev ? { ...prev, services } : prev));
   };
 
-  const emptyCopy: Record<TabKey, { title: string; description: string }> = {
-    active: {
-      title: 'No active alerts',
-      description: 'Everything is running within normal thresholds right now. New breaches will show up here.',
-    },
-    normal: {
-      title: 'No alerts have returned to normal yet',
-      description: 'Once an active alert clears, it will show up here with its resolution details.',
-    },
-    all: {
-      title: 'No alert rules yet',
-      description: 'Create your first alert rule to start monitoring services for threshold breaches.',
-    },
+  const emptyCopy = {
+    title: 'No alert rules yet',
+    description: 'Create your first alert rule to start monitoring services for threshold breaches.',
   };
 
   return (
@@ -189,10 +166,8 @@ export default function ManageAlertsPage() {
               </Button>
             </div>
 
-            <Tabs counts={counts} value={tab} onChange={changeTab} />
-
-            {afterTabSearch.length === 0 && !filtersActive ? (
-              <EmptyState {...emptyCopy[tab]} onCreate={openCreate} />
+            {afterSearch.length === 0 && !filtersActive ? (
+              <EmptyState {...emptyCopy} onCreate={openCreate} />
             ) : (
               <div className="flex w-full flex-col items-start gap-3">
                 <div className="flex w-full items-center justify-between gap-3">

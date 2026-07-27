@@ -4,7 +4,7 @@ import SeverityBadge from './Badge';
 import { ConditionPill, EventTypeCell } from './ConditionPill';
 import Icon from './Icon';
 import Tooltip from './Tooltip';
-import { latestTimestamp } from '../utils/rules';
+import { activeEntryForService, latestTimestamp } from '../utils/rules';
 import { formatDateTime } from '../utils/dates';
 
 export type SortKey = 'name' | 'condition' | 'timestamp';
@@ -177,7 +177,11 @@ export default function AlertsTable({
         </div>
       </div>
 
-      {rules.map((rule) => (
+      {rules.map((rule) => {
+        const [firstService, ...restServices] = rule.services;
+        const firstActive = firstService ? Boolean(activeEntryForService(rule, firstService.name)) : false;
+        const restActiveCount = restServices.filter((s) => activeEntryForService(rule, s.name)).length;
+        return (
         <div
           key={rule.id}
           onClick={() => onRowClick(rule)}
@@ -188,10 +192,26 @@ export default function AlertsTable({
             <SeverityBadge severity={rule.severity} className="w-fit" />
           </div>
           <div className="flex flex-1 flex-col items-start justify-center self-stretch overflow-clip px-2 py-4">
-            <div className="flex items-center gap-1 whitespace-nowrap">
-              <p className="truncate text-sm font-bold text-secondary-7">{rule.services[0]?.name}</p>
-              {rule.services.length > 1 && (
-                <p className="text-[10px] text-secondary-6">+{rule.services.length - 1} more</p>
+            <div className="flex items-center gap-1.5 whitespace-nowrap">
+              {firstService && (
+                <span
+                  className={`size-1.5 shrink-0 rounded-full ${firstActive ? 'bg-red-4' : 'bg-primary-4'}`}
+                  aria-hidden="true"
+                />
+              )}
+              <p className="truncate text-sm font-bold text-secondary-7">{firstService?.name}</p>
+              {restServices.length > 0 && (
+                <Tooltip
+                  label={restServices
+                    .map((s) => `${s.name}${activeEntryForService(rule, s.name) ? ' (active)' : ''}`)
+                    .join(', ')}
+                >
+                  <span
+                    className={`text-[10px] font-bold ${restActiveCount > 0 ? 'text-red-5' : 'text-secondary-6'}`}
+                  >
+                    +{restServices.length} more
+                  </span>
+                </Tooltip>
               )}
             </div>
           </div>
@@ -233,7 +253,8 @@ export default function AlertsTable({
             </Tooltip>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
