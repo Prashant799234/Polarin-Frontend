@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AlertRule, FlapEvents, NotifyChannel, Recipient, SlaTier } from '../types';
 import Button from './Button';
 import Icon from './Icon';
@@ -43,6 +43,8 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
   const [switchoverLocation, setSwitchoverLocation] = useState(initial?.switchoverLocation ?? true);
   const [selectedServices, setSelectedServices] = useState<string[]>(initial?.services.map((s) => s.name) ?? []);
   const [familyFilter, setFamilyFilter] = useState<'all' | 'VC' | 'Wave' | 'Port'>('all');
+  const [showServicePicker, setShowServicePicker] = useState(false);
+  const servicePickerRef = useRef<HTMLDivElement>(null);
   const [channels, setChannels] = useState<NotifyChannel[]>(initial?.channels ?? ['In-app', 'Email']);
   const [recipients, setRecipients] = useState<Recipient[]>(initial?.recipients ?? []);
   const [recipientQuery, setRecipientQuery] = useState('');
@@ -53,6 +55,15 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
     const raf = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(raf);
   }, []);
+
+  useEffect(() => {
+    if (!showServicePicker) return;
+    const onClick = (e: MouseEvent) => {
+      if (servicePickerRef.current && !servicePickerRef.current.contains(e.target as Node)) setShowServicePicker(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [showServicePicker]);
 
   const handleClose = () => {
     setVisible(false);
@@ -152,6 +163,13 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
     });
   };
 
+  const serviceSummary =
+    selectedServices.length === 0
+      ? 'Select services…'
+      : selectedServices.length <= 2
+        ? selectedServices.join(', ')
+        : `${selectedServices.slice(0, 2).join(', ')} +${selectedServices.length - 2} more`;
+
   return (
     <div
       className={`fixed inset-0 z-40 flex justify-end bg-black/80 transition-opacity duration-200 ease-out ${
@@ -160,7 +178,7 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
       onClick={handleClose}
     >
       <div
-        className={`flex h-full w-[640px] max-w-[95vw] flex-col bg-white transition-transform duration-200 ease-out ${
+        className={`flex h-full w-[560px] max-w-[95vw] flex-col bg-white transition-transform duration-200 ease-out ${
           visible ? 'translate-x-0' : 'translate-x-full'
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -175,7 +193,7 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-6">
-          <div className="flex w-full flex-col gap-6">
+          <div className="flex w-full flex-col gap-5">
             <div className="flex flex-col gap-1.5">
               <label className={labelClass}>Rule Name</label>
               <input
@@ -186,29 +204,34 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
               />
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className={labelClass}>Metric</label>
-              <div className="grid grid-cols-2 gap-2">
-                {metricCatalog.map((m) => {
-                  const on = metricKey === m.key;
-                  return (
-                    <button
-                      key={m.key}
-                      type="button"
-                      onClick={() => pickMetric(m.key)}
-                      title={m.description}
-                      className={`flex flex-col items-start gap-0.5 rounded-xl border px-3 py-2 text-left transition-all duration-150 active:scale-[0.98] ${
-                        on ? 'border-primary-5 bg-primary-2' : 'border-secondary-3 bg-white hover:border-secondary-4 hover:bg-secondary-1'
-                      }`}
-                    >
-                      <span className="text-sm font-bold text-secondary-7">{m.label}</span>
-                      <span className="text-xs text-secondary-6">{m.products.join(' / ')}</span>
-                    </button>
-                  );
-                })}
+            <div className="flex gap-3">
+              <div className="flex flex-1 flex-col gap-1.5">
+                <label className={labelClass}>Metric</label>
+                <select
+                  value={metricKey}
+                  onChange={(e) => pickMetric(e.target.value)}
+                  className={`${fieldClass} cursor-pointer`}
+                >
+                  {metricCatalog.map((m) => (
+                    <option key={m.key} value={m.key}>
+                      {m.label} ({m.products.join(' / ')})
+                    </option>
+                  ))}
+                </select>
               </div>
-              <p className="text-xs text-secondary-6">{metric.description}</p>
+              <div className="flex w-[140px] flex-col gap-1.5">
+                <label className={labelClass}>Severity</label>
+                <select
+                  value={severity}
+                  onChange={(e) => setSeverity(e.target.value as 'Critical' | 'Info')}
+                  className={`${fieldClass} cursor-pointer`}
+                >
+                  <option value="Critical">Critical</option>
+                  <option value="Info">Info</option>
+                </select>
+              </div>
             </div>
+            <p className="-mt-3 text-xs text-secondary-6">{metric.description}</p>
 
             {/* Condition — branches per metric type */}
             {isAvailability ? (
@@ -253,7 +276,7 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
             ) : isFlaps ? (
               <div className="flex flex-col gap-3">
                 <label className={labelClass}>Condition</label>
-                <p className="text-xs text-secondary-6">{metric.description} Turn on the events you care about.</p>
+                <p className="text-xs text-secondary-6">Turn on the events you care about.</p>
 
                 <div className={`rounded-xl border p-3 ${flapEvents.switchover ? 'border-primary-4 bg-primary-2/40' : 'border-secondary-3'}`}>
                   <div className="flex items-start justify-between gap-3">
@@ -365,79 +388,75 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
                     );
                   })}
                 </div>
-                <p className="text-xs text-secondary-6">
-                  A breach must hold this long before an alert is raised, so brief blips don&apos;t trigger it.
-                </p>
               </div>
             )}
 
-            <div className="flex flex-col gap-1.5">
-              <label className={labelClass}>Severity</label>
-              <select
-                value={severity}
-                onChange={(e) => setSeverity(e.target.value as 'Critical' | 'Info')}
-                className={`${fieldClass} w-[160px] cursor-pointer`}
-              >
-                <option value="Critical">Critical</option>
-                <option value="Info">Info</option>
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
+            <div className="relative flex flex-col gap-1.5" ref={servicePickerRef}>
               <label className={labelClass}>Services this alert watches</label>
-              {availableFamilies.length > 2 && (
-                <div className="flex flex-wrap gap-2 pb-1">
-                  {availableFamilies.map((f) => {
-                    const on = familyFilter === f.key;
-                    return (
-                      <button
-                        key={f.key}
-                        type="button"
-                        onClick={() => setFamilyFilter(f.key)}
-                        className={`rounded-full border px-3 py-1 text-xs font-bold transition-all duration-150 active:scale-95 ${
-                          on
-                            ? 'border-primary-5 bg-primary-5 text-secondary-1'
-                            : 'border-secondary-3 bg-white text-secondary-7 hover:border-secondary-4 hover:bg-secondary-1'
-                        }`}
-                      >
-                        {f.label}
-                      </button>
-                    );
-                  })}
+              <button
+                type="button"
+                onClick={() => setShowServicePicker((v) => !v)}
+                className={`${fieldClass} flex cursor-pointer items-center justify-between text-left`}
+              >
+                <span className={selectedServices.length ? 'text-secondary-7' : 'text-secondary-6'}>{serviceSummary}</span>
+                <Icon name={showServicePicker ? 'expand_less' : 'expand_more'} size={20} className="text-secondary-6" />
+              </button>
+
+              {showServicePicker && (
+                <div className="absolute top-full z-20 mt-1 w-full origin-top animate-[dropdown-in_150ms_ease-out] rounded-xl border border-secondary-3 bg-white p-2 shadow-card">
+                  {availableFamilies.length > 2 && (
+                    <div className="flex flex-wrap gap-1.5 border-b border-secondary-2 p-1 pb-2">
+                      {availableFamilies.map((f) => {
+                        const on = familyFilter === f.key;
+                        return (
+                          <button
+                            key={f.key}
+                            type="button"
+                            onClick={() => setFamilyFilter(f.key)}
+                            className={`rounded-full border px-2.5 py-1 text-xs font-bold transition-colors duration-150 ${
+                              on ? 'border-primary-5 bg-primary-5 text-secondary-1' : 'border-secondary-3 bg-white text-secondary-7 hover:bg-secondary-1'
+                            }`}
+                          >
+                            {f.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="max-h-56 overflow-y-auto">
+                    {eligibleServices.length === 0 ? (
+                      <p className="p-2 text-xs text-secondary-6">No services match this filter.</p>
+                    ) : (
+                      eligibleServices.map((service) => {
+                        const checked = selectedServices.includes(service.name);
+                        return (
+                          <label
+                            key={service.name}
+                            className={`flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 transition-colors duration-150 ${
+                              checked ? 'bg-primary-2' : 'hover:bg-secondary-1'
+                            }`}
+                          >
+                            <span className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleService(service.name)}
+                                className="accent-primary-4"
+                              />
+                              <span className="text-sm font-bold text-secondary-7">{service.name}</span>
+                            </span>
+                            <span className="font-mono text-[10px] text-secondary-6">{service.capacity}</span>
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               )}
-              <div className="flex flex-col gap-2 rounded-xl border border-secondary-2 p-2">
-                {eligibleServices.length === 0 ? (
-                  <p className="p-2 text-xs text-secondary-6">No services match this filter.</p>
-                ) : (
-                  eligibleServices.map((service) => {
-                    const checked = selectedServices.includes(service.name);
-                    return (
-                      <label
-                        key={service.name}
-                        className={`flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 transition-colors duration-150 ${
-                          checked ? 'bg-primary-2' : 'hover:bg-secondary-1'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => toggleService(service.name)}
-                            className="accent-primary-4"
-                          />
-                          <span className="text-sm font-bold text-secondary-7">{service.name}</span>
-                        </span>
-                        <span className="font-mono text-[10px] text-secondary-6">{service.capacity}</span>
-                      </label>
-                    );
-                  })
-                )}
-              </div>
               <p className="text-xs text-secondary-6">{selectedServices.length} service{selectedServices.length === 1 ? '' : 's'} selected.</p>
             </div>
 
-            <div className="flex flex-col gap-3 border-t border-secondary-2 pt-6">
+            <div className="flex flex-col gap-3 border-t border-secondary-2 pt-5">
               <p className={sectionLabel}>Notifications</p>
 
               <div className="flex flex-col gap-1.5">
@@ -460,13 +479,6 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
                       </button>
                     );
                   })}
-                </div>
-                <div className="flex flex-col gap-1">
-                  {NOTIFY_CHANNELS.filter((c) => channels.includes(c.key)).map((c) => (
-                    <p key={c.key} className="text-xs text-secondary-6">
-                      <span className="font-bold text-secondary-7">{c.label}:</span> {c.detail}
-                    </p>
-                  ))}
                 </div>
                 {channels.length === 0 && <p className="text-xs font-bold text-red-5">Pick at least one channel.</p>}
               </div>
@@ -562,9 +574,6 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
                     <option key={f}>{f}</option>
                   ))}
                 </select>
-                <p className="text-xs text-secondary-6">
-                  While an alert stays active you&apos;re notified once — Digest and Once per day summarize instead of re-pinging.
-                </p>
               </div>
             </div>
           </div>
