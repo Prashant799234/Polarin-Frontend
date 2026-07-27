@@ -44,7 +44,8 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
   const [familyFilter, setFamilyFilter] = useState<'all' | 'VC' | 'Wave' | 'Port'>('all');
   const [showServicePicker, setShowServicePicker] = useState(false);
   const servicePickerRef = useRef<HTMLDivElement>(null);
-  const [channels, setChannels] = useState<NotifyChannel[]>(initial?.channels ?? ['In-app']);
+  const [emailOn, setEmailOn] = useState(initial?.channels.includes('Email') ?? false);
+  const channels: NotifyChannel[] = emailOn ? ['In-app', 'Email'] : ['In-app'];
   const [recipients, setRecipients] = useState<Recipient[]>(initial?.recipients ?? []);
   const [recipientQuery, setRecipientQuery] = useState('');
   const [visible, setVisible] = useState(false);
@@ -102,10 +103,6 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
     setSelectedServices((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
   };
 
-  const toggleChannel = (c: NotifyChannel) => {
-    setChannels((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
-  };
-
   const toggleFlapEvent = (key: keyof FlapEvents) => {
     setFlapEvents((prev) => ({ ...prev, [key]: !prev[key] }));
   };
@@ -137,8 +134,7 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
   if (!isFlaps && threshold.trim().length === 0) missingReasons.push('a threshold value');
   if (isAvailability && slaTier === 'custom' && threshold.trim().length === 0) missingReasons.push('a custom threshold');
   if (selectedServices.length === 0) missingReasons.push('at least one service');
-  if (channels.length === 0) missingReasons.push('a notification channel');
-  if (channels.includes('Email') && recipients.length === 0) missingReasons.push('at least one recipient');
+  if (emailOn && recipients.length === 0) missingReasons.push('at least one recipient');
 
   const canSave = missingReasons.length === 0;
 
@@ -470,33 +466,45 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
               <div className="flex flex-col gap-1.5">
                 <label className={labelClass}>Notify by</label>
                 <div className="flex flex-col gap-2 rounded-xl border border-secondary-2 p-2">
-                  {NOTIFY_CHANNELS.map((c) => {
-                    const on = channels.includes(c.key);
-                    return (
-                      <label
-                        key={c.key}
-                        className={`flex cursor-pointer items-start gap-3 rounded-lg px-3 py-2 transition-colors duration-150 ${
-                          on ? 'bg-primary-2' : 'hover:bg-secondary-1'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={on}
-                          onChange={() => toggleChannel(c.key)}
-                          className="mt-0.5 accent-primary-4"
-                        />
-                        <span>
-                          <span className="block text-sm font-bold text-secondary-7">{c.label}</span>
-                          <span className="block text-xs text-secondary-6">{c.detail}</span>
+                  <div className="flex items-start gap-3 rounded-lg bg-primary-2 px-3 py-2">
+                    <Icon name="check_circle" size={20} className="mt-0.5 flex-none text-primary-5" />
+                    <span>
+                      <span className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-secondary-7">In-app</span>
+                        <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-6">
+                          Always on
                         </span>
-                      </label>
-                    );
-                  })}
+                      </span>
+                      <span className="block text-xs text-secondary-6">
+                        You&apos;ll get in-app notifications the moment the alert fires — on your Dashboard, on the
+                        affected Service page, and in the notification bell at the top of the screen. This can&apos;t
+                        be turned off.
+                      </span>
+                    </span>
+                  </div>
+
+                  <label
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg px-3 py-2 transition-colors duration-150 ${
+                      emailOn ? 'bg-primary-2' : 'hover:bg-secondary-1'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={emailOn}
+                      onChange={() => setEmailOn((v) => !v)}
+                      className="mt-0.5 accent-primary-4"
+                    />
+                    <span>
+                      <span className="block text-sm font-bold text-secondary-7">Email</span>
+                      <span className="block text-xs text-secondary-6">
+                        {NOTIFY_CHANNELS.find((c) => c.key === 'Email')!.detail}
+                      </span>
+                    </span>
+                  </label>
                 </div>
-                {channels.length === 0 && <p className="text-xs font-bold text-red-5">Pick at least one channel.</p>}
               </div>
 
-              {channels.includes('Email') && (
+              {emailOn && (
                 <div className="flex flex-col gap-1.5">
                   <label className={labelClass}>
                     Recipients <span className="text-red-5">*</span>
