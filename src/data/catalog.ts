@@ -146,8 +146,18 @@ export const PRODUCT_FAMILIES: { key: 'all' | 'VC' | 'Wave' | 'Port'; label: str
 ];
 
 export const NOTIFY_CHANNELS: { key: 'In-app' | 'Email'; label: string; detail: string }[] = [
-  { key: 'In-app', label: 'In-app', detail: 'Appears on your Dashboard, the Service page, and the notification bell.' },
-  { key: 'Email', label: 'Email', detail: 'Sent to the recipients you choose below.' },
+  {
+    key: 'In-app',
+    label: 'In-app',
+    detail:
+      'Shows up inside Polarin the moment the alert fires — on your Dashboard, on the affected Service page, and in the notification bell at the top of the screen.',
+  },
+  {
+    key: 'Email',
+    label: 'Email',
+    detail:
+      'Sent as a standalone email straight to each recipient\'s inbox at the address you add below — with the rule name, severity, and what\'s currently breaching. No Polarin login is needed to receive it.',
+  },
 ];
 
 export interface SlaTierDef {

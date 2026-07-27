@@ -44,7 +44,7 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
   const [familyFilter, setFamilyFilter] = useState<'all' | 'VC' | 'Wave' | 'Port'>('all');
   const [showServicePicker, setShowServicePicker] = useState(false);
   const servicePickerRef = useRef<HTMLDivElement>(null);
-  const [channels, setChannels] = useState<NotifyChannel[]>(initial?.channels ?? ['In-app', 'Email']);
+  const [channels, setChannels] = useState<NotifyChannel[]>(initial?.channels ?? ['In-app']);
   const [recipients, setRecipients] = useState<Recipient[]>(initial?.recipients ?? []);
   const [recipientQuery, setRecipientQuery] = useState('');
   const [visible, setVisible] = useState(false);
@@ -501,6 +501,10 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
                   <label className={labelClass}>
                     Recipients <span className="text-red-5">*</span>
                   </label>
+                  <p className="-mt-1 text-xs text-secondary-6">
+                    Each person receives the alert email at the address shown below — pick an existing user or
+                    invite someone new by email.
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {recipients.map((r) => (
                       <span
