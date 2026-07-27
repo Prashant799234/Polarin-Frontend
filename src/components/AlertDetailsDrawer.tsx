@@ -5,7 +5,7 @@ import Button from './Button';
 import ConfirmModal from './ConfirmModal';
 import Icon from './Icon';
 import Tooltip from './Tooltip';
-import { serviceCatalog } from '../data/catalog';
+import { NOTIFY_CHANNELS, PRODUCT_FAMILIES, metricByKey, serviceCatalog } from '../data/catalog';
 import { activeEntryForService, conditionText, entriesForService } from '../utils/rules';
 import { formatDateTime, formatDuration } from '../utils/dates';
 
@@ -19,8 +19,9 @@ interface Props {
 }
 
 export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, onUpdateServices, onToast }: Props) {
-  const [tab, setTab] = useState<'services' | 'history'>('services');
+  const [tab, setTab] = useState<'services' | 'history' | 'notifications'>('services');
   const [showPicker, setShowPicker] = useState(false);
+  const [pickerFamily, setPickerFamily] = useState<'all' | 'VC' | 'Wave' | 'Port'>('all');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [serviceToRemove, setServiceToRemove] = useState<AlertService | null>(null);
   const [historyFilter, setHistoryFilter] = useState('all');
@@ -36,7 +37,14 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
     window.setTimeout(onClose, 200);
   };
 
-  const availableToAdd = serviceCatalog.filter((c) => !rule.services.some((s) => s.name === c.name));
+  const ruleMetric = metricByKey(rule.metricKey);
+  const pickerFamilies = PRODUCT_FAMILIES.filter((f) => f.key === 'all' || ruleMetric.products.includes(f.key));
+  const availableToAdd = serviceCatalog.filter(
+    (c) =>
+      ruleMetric.products.includes(c.family) &&
+      (pickerFamily === 'all' || c.family === pickerFamily) &&
+      !rule.services.some((s) => s.name === c.name),
+  );
 
   const confirmRemoveService = () => {
     if (!serviceToRemove) return;
@@ -96,7 +104,7 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
         </div>
 
         <div className="mt-4 flex w-full flex-none items-center gap-0.5 border-y-[0.5px] border-secondary-2 bg-secondary-1 px-6 py-1 shadow-[0px_0.5px_2px_0px_rgba(96,97,112,0.16)]">
-          {(['services', 'history'] as const).map((key) => (
+          {(['services', 'history', 'notifications'] as const).map((key) => (
             <button
               key={key}
               type="button"
@@ -108,10 +116,10 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
               }`}
             >
               <span className={`text-sm font-bold ${tab === key ? 'text-secondary-7' : 'text-secondary-6'}`}>
-                {key === 'services' ? 'Services' : 'Alert History'}
+                {key === 'services' ? 'Services' : key === 'history' ? 'Alert History' : 'Notifications'}
               </span>
               <span className="inline-flex items-center justify-center rounded-lg border border-secondary-3 bg-secondary-2 px-2 py-0.5 text-[10px] font-bold text-secondary-7">
-                {key === 'services' ? rule.services.length : rule.history.length}
+                {key === 'services' ? rule.services.length : key === 'history' ? rule.history.length : rule.channels.length}
               </span>
             </button>
           ))}
@@ -134,7 +142,26 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
                     Add Services
                   </Button>
                   {showPicker && (
-                    <div className="absolute right-0 z-10 mt-2 max-h-64 w-64 origin-top-right animate-[dropdown-in_150ms_ease-out] overflow-y-auto rounded-xl border border-secondary-3 bg-white p-2 shadow-card">
+                    <div className="absolute right-0 z-10 mt-2 max-h-80 w-72 origin-top-right animate-[dropdown-in_150ms_ease-out] overflow-y-auto rounded-xl border border-secondary-3 bg-white p-2 shadow-card">
+                      {pickerFamilies.length > 2 && (
+                        <div className="flex flex-wrap gap-1.5 border-b border-secondary-2 p-1 pb-2">
+                          {pickerFamilies.map((f) => {
+                            const on = pickerFamily === f.key;
+                            return (
+                              <button
+                                key={f.key}
+                                type="button"
+                                onClick={() => setPickerFamily(f.key)}
+                                className={`rounded-full border px-2.5 py-1 text-xs font-bold transition-colors duration-150 ${
+                                  on ? 'border-primary-5 bg-primary-5 text-secondary-1' : 'border-secondary-3 bg-white text-secondary-7 hover:bg-secondary-1'
+                                }`}
+                              >
+                                {f.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                       {availableToAdd.length === 0 ? (
                         <p className="p-2 text-xs text-secondary-6">All catalog services already added.</p>
                       ) : (
@@ -234,7 +261,7 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
                 })}
               </div>
             </div>
-          ) : (
+          ) : tab === 'history' ? (
             <div className="flex w-full flex-col items-start gap-4">
               <div className="flex w-full flex-col items-start">
                 <p className="font-lato text-base font-extrabold text-secondary-7">Alert history</p>
@@ -295,6 +322,67 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
                   ))}
                 </div>
               )}
+            </div>
+          ) : (
+            <div className="flex w-full flex-col items-start gap-5">
+              <div className="flex w-full flex-col items-start">
+                <p className="font-lato text-base font-extrabold text-secondary-7">Notifications</p>
+                <p className="text-sm text-secondary-6">
+                  Who hears about this alert and how. Use Edit Rule above to change these settings.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <p className={`text-sm font-bold text-secondary-7`}>Notify by</p>
+                <div className="flex flex-wrap gap-2">
+                  {NOTIFY_CHANNELS.map((c) => {
+                    const on = rule.channels.includes(c.key);
+                    return (
+                      <span
+                        key={c.key}
+                        className={`rounded-full border px-3 py-1.5 text-sm font-bold ${
+                          on ? 'border-primary-5 bg-primary-5 text-secondary-1' : 'border-secondary-3 bg-white text-secondary-5'
+                        }`}
+                      >
+                        {c.label}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {rule.channels.includes('Email') && (
+                <div className="flex flex-col gap-1.5">
+                  <p className="text-sm font-bold text-secondary-7">Recipients</p>
+                  {rule.recipients.length === 0 ? (
+                    <p className="text-sm text-secondary-6">No recipients configured.</p>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {rule.recipients.map((r) => (
+                        <div key={r.email} className="flex items-center gap-3 rounded-xl border border-secondary-2 px-4 py-3">
+                          <div className="flex size-8 items-center justify-center rounded-full bg-primary-2 text-xs font-bold text-primary-5">
+                            {(r.name ?? r.email).slice(0, 1).toUpperCase()}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-secondary-7">{r.name ?? r.email}</p>
+                            <p className="text-xs text-secondary-6">{r.email}</p>
+                          </div>
+                          {r.invited && (
+                            <span className="rounded bg-orange-5 px-2 py-1 text-[10px] font-bold text-white">Invite pending</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1.5">
+                <p className="text-sm font-bold text-secondary-7">Frequency</p>
+                <span className="w-fit rounded-full border border-secondary-3 bg-secondary-1 px-3 py-1.5 text-sm font-bold text-secondary-7">
+                  {rule.frequency}
+                </span>
+              </div>
             </div>
           )}
         </div>

@@ -1,6 +1,8 @@
 export type Severity = 'Critical' | 'Info';
 export type ProductFamily = 'VC' | 'Wave' | 'Port';
 export type Direction = 'drops below' | 'rises above' | 'reaches';
+export type NotifyChannel = 'In-app' | 'Email';
+export type SlaTier = 'expected' | 'standard' | 'custom';
 
 export interface MetricDef {
   key: string;
@@ -36,6 +38,18 @@ export interface HistoryEntry {
   clearedAt?: string;
 }
 
+export interface Recipient {
+  name?: string;
+  email: string;
+  invited?: boolean;
+}
+
+export interface FlapEvents {
+  switchover: boolean;
+  flap: boolean;
+  outage: boolean;
+}
+
 export interface AlertRule {
   id: string;
   ruleName: string;
@@ -48,4 +62,10 @@ export interface AlertRule {
   services: AlertService[];
   history: HistoryEntry[];
   createdAt: string;
+  channels: NotifyChannel[];
+  recipients: Recipient[];
+  frequency: string;
+  slaTier?: SlaTier;
+  flapEvents?: FlapEvents;
+  switchoverLocation?: boolean;
 }

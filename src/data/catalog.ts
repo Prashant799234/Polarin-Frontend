@@ -137,3 +137,47 @@ export const serviceCatalog: CatalogService[] = [
 ];
 
 export const catalogServiceByName = (name: string) => serviceCatalog.find((s) => s.name === name);
+
+export const PRODUCT_FAMILIES: { key: 'all' | 'VC' | 'Wave' | 'Port'; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'VC', label: 'Virtual Connection' },
+  { key: 'Wave', label: 'DCI Wave' },
+  { key: 'Port', label: 'Port' },
+];
+
+export const FREQUENCIES = ['Real-time', 'Once per day', 'Digest'];
+
+export const NOTIFY_CHANNELS: { key: 'In-app' | 'Email'; label: string; detail: string }[] = [
+  { key: 'In-app', label: 'In-app', detail: 'Appears on your Dashboard, the Service page, and the notification bell.' },
+  { key: 'Email', label: 'Email', detail: 'Sent to the recipients you choose below.' },
+];
+
+export interface SlaTierDef {
+  key: 'expected' | 'standard' | 'custom';
+  label: string;
+  value: string;
+  note: string;
+}
+
+export const SLA_TIERS: SlaTierDef[] = [
+  { key: 'expected', label: 'Expected SLA', value: '99.9', note: 'The premium uptime target plotted on your Availability graph.' },
+  { key: 'standard', label: 'Standard SLA', value: '99.7', note: 'The contracted baseline commitment.' },
+  { key: 'custom', label: 'Custom target', value: '', note: 'Set your own threshold if it differs from the SLA bands.' },
+];
+
+// Placeholder directory for the recipient picker — generic example data, not tied to any real org.
+export interface DirectoryUser {
+  name: string;
+  email: string;
+  role: string;
+}
+
+export const userDirectory: DirectoryUser[] = [
+  { name: 'Alex Morgan', email: 'alex.morgan@example.com', role: 'System Admin' },
+  { name: 'Jordan Lee', email: 'jordan.lee@example.com', role: 'Network Admin' },
+  { name: 'Ops Desk', email: 'ops-desk@example.com', role: 'Network Admin' },
+  { name: 'NOC Team', email: 'noc-team@example.com', role: 'Network Viewer' },
+  { name: 'Sam Patel', email: 'sam.patel@example.com', role: 'Finance Viewer' },
+];
+
+export const directoryUserByEmail = (email: string) => userDirectory.find((u) => u.email === email);

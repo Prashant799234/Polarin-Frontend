@@ -1,5 +1,5 @@
-import type { AlertRule, HistoryEntry } from '../types';
-import { catalogServiceByName } from './catalog';
+import type { AlertRule, HistoryEntry, Recipient } from '../types';
+import { catalogServiceByName, userDirectory } from './catalog';
 
 function svc(name: string) {
   const c = catalogServiceByName(name)!;
@@ -12,6 +12,11 @@ function h(entry: Omit<HistoryEntry, 'id'>): HistoryEntry {
   return { id: `h-${historyCounter}`, ...entry };
 }
 
+function rec(email: string): Recipient {
+  const u = userDirectory.find((x) => x.email === email)!;
+  return { name: u.name, email: u.email };
+}
+
 export const initialAlerts: AlertRule[] = [
   {
     id: 'ar-001',
@@ -22,6 +27,7 @@ export const initialAlerts: AlertRule[] = [
     comparator: '<',
     threshold: '99.9',
     holdWindow: '15 min',
+    slaTier: 'expected',
     services: [svc('VC-Bangalore-01'), svc('VC-Bangalore-02'), svc('VC-Chennai-01')],
     history: [
       h({ service: 'VC-Bangalore-01', status: 'active', observed: '99.4%', raisedAt: '2026-07-27T09:10:00' }),
@@ -41,6 +47,9 @@ export const initialAlerts: AlertRule[] = [
       }),
     ],
     createdAt: '2026-05-02T10:00:00',
+    channels: ['In-app', 'Email'],
+    recipients: [rec('alex.morgan@example.com'), rec('ops-desk@example.com')],
+    frequency: 'Real-time',
   },
   {
     id: 'ar-002',
@@ -63,6 +72,9 @@ export const initialAlerts: AlertRule[] = [
       }),
     ],
     createdAt: '2026-04-11T10:00:00',
+    channels: ['In-app'],
+    recipients: [],
+    frequency: 'Digest',
   },
   {
     id: 'ar-003',
@@ -84,6 +96,9 @@ export const initialAlerts: AlertRule[] = [
       }),
     ],
     createdAt: '2026-03-30T10:00:00',
+    channels: ['In-app', 'Email'],
+    recipients: [rec('jordan.lee@example.com')],
+    frequency: 'Real-time',
   },
   {
     id: 'ar-004',
@@ -105,6 +120,9 @@ export const initialAlerts: AlertRule[] = [
       }),
     ],
     createdAt: '2026-03-14T10:00:00',
+    channels: ['In-app'],
+    recipients: [],
+    frequency: 'Once per day',
   },
   {
     id: 'ar-005',
@@ -126,6 +144,9 @@ export const initialAlerts: AlertRule[] = [
       }),
     ],
     createdAt: '2026-02-27T10:00:00',
+    channels: ['In-app', 'Email'],
+    recipients: [rec('alex.morgan@example.com'), rec('sam.patel@example.com')],
+    frequency: 'Real-time',
   },
   {
     id: 'ar-006',
@@ -147,6 +168,9 @@ export const initialAlerts: AlertRule[] = [
       }),
     ],
     createdAt: '2026-02-10T10:00:00',
+    channels: ['In-app'],
+    recipients: [],
+    frequency: 'Digest',
   },
   {
     id: 'ar-007',
@@ -175,6 +199,9 @@ export const initialAlerts: AlertRule[] = [
       }),
     ],
     createdAt: '2026-01-22T10:00:00',
+    channels: ['In-app', 'Email'],
+    recipients: [rec('ops-desk@example.com'), rec('noc-team@example.com')],
+    frequency: 'Real-time',
   },
   {
     id: 'ar-008',
@@ -196,6 +223,9 @@ export const initialAlerts: AlertRule[] = [
       }),
     ],
     createdAt: '2026-01-05T10:00:00',
+    channels: ['In-app', 'Email'],
+    recipients: [rec('noc-team@example.com')],
+    frequency: 'Real-time',
   },
   {
     id: 'ar-009',
@@ -206,6 +236,8 @@ export const initialAlerts: AlertRule[] = [
     comparator: '>',
     threshold: '12',
     holdWindow: '30 min',
+    flapEvents: { switchover: true, flap: true, outage: true },
+    switchoverLocation: true,
     services: [svc('Wave-BLR-MUM')],
     history: [
       h({
@@ -217,6 +249,9 @@ export const initialAlerts: AlertRule[] = [
       }),
     ],
     createdAt: '2025-12-18T10:00:00',
+    channels: ['In-app', 'Email'],
+    recipients: [rec('ops-desk@example.com')],
+    frequency: 'Real-time',
   },
   {
     id: 'ar-010',
@@ -238,5 +273,8 @@ export const initialAlerts: AlertRule[] = [
       }),
     ],
     createdAt: '2025-11-30T10:00:00',
+    channels: ['In-app'],
+    recipients: [],
+    frequency: 'Once per day',
   },
 ];
