@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import type { AlertRule } from '../types';
+import { useEffect, useState } from 'react';
+import type { AlertRule, AlertService } from '../types';
 import SeverityBadge from './Badge';
 import Button from './Button';
+import ConfirmModal from './ConfirmModal';
 import closeIcon from '../assets/icons/close.svg';
 import editIcon from '../assets/icons/edit.svg';
 import deleteIcon from '../assets/icons/delete.svg';
@@ -19,16 +20,32 @@ interface Props {
   onEdit: () => void;
   onDelete: () => void;
   onUpdateServices: (services: AlertRule['services']) => void;
+  onToast: (message: string) => void;
 }
 
-export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, onUpdateServices }: Props) {
+export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, onUpdateServices, onToast }: Props) {
   const [tab, setTab] = useState<'services' | 'history'>('services');
   const [showPicker, setShowPicker] = useState(false);
+  const [serviceToRemove, setServiceToRemove] = useState<AlertService | null>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const handleClose = () => {
+    setVisible(false);
+    window.setTimeout(onClose, 200);
+  };
 
   const availableToAdd = serviceCatalog.filter((c) => !rule.services.some((s) => s.name === c.name));
 
-  const removeService = (id: string) => {
-    onUpdateServices(rule.services.filter((s) => s.id !== id));
+  const confirmRemoveService = () => {
+    if (!serviceToRemove) return;
+    onUpdateServices(rule.services.filter((s) => s.id !== serviceToRemove.id));
+    onToast(`${serviceToRemove.name} removed from ${rule.ruleName}`);
+    setServiceToRemove(null);
   };
 
   const addService = (catalogItem: (typeof serviceCatalog)[number]) => {
@@ -36,13 +53,21 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
       ...rule.services,
       { id: `${catalogItem.id}-${Date.now()}`, name: catalogItem.name, activeAlerts: 0, capacity: catalogItem.capacity },
     ]);
+    onToast(`${catalogItem.name} added to ${rule.ruleName}`);
     setShowPicker(false);
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-black/80" onClick={onClose}>
+    <div
+      className={`fixed inset-0 z-40 flex justify-end bg-black/80 transition-opacity duration-200 ease-out ${
+        visible ? 'opacity-100' : 'opacity-0'
+      }`}
+      onClick={handleClose}
+    >
       <div
-        className="flex h-full w-[800px] max-w-[95vw] flex-col items-start overflow-y-auto bg-white py-6"
+        className={`flex h-full w-[800px] max-w-[95vw] flex-col items-start overflow-y-auto bg-white py-6 transition-transform duration-200 ease-out ${
+          visible ? 'translate-x-0' : 'translate-x-full'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex w-full flex-col items-start gap-6 px-6">
@@ -57,7 +82,7 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
                   {rule.aggregation} {rule.metric} {rule.comparator} {rule.threshold}
                 </p>
               </div>
-              <Button variant="secondary" icon={<img src={closeIcon} alt="" className="size-5" />} onClick={onClose}>
+              <Button variant="secondary" icon={<img src={closeIcon} alt="" className="size-5" />} onClick={handleClose}>
                 Close
               </Button>
             </div>
@@ -71,7 +96,13 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
                   Delete
                 </Button>
               </div>
-              <img src={moreVert} alt="" className="size-6" />
+              <button
+                type="button"
+                aria-label="More options"
+                className="rounded-full p-1.5 transition-colors duration-150 hover:bg-secondary-1 active:scale-95"
+              >
+                <img src={moreVert} alt="" className="size-6" />
+              </button>
             </div>
           </div>
         </div>
@@ -82,8 +113,10 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
               key={key}
               type="button"
               onClick={() => setTab(key)}
-              className={`flex items-center gap-1 overflow-clip rounded-[10px] px-3 py-2 ${
-                tab === key ? 'bg-white shadow-[0px_2px_4px_0px_rgba(58,58,58,0.08),0px_4px_6px_0px_rgba(58,58,58,0.06)]' : ''
+              className={`flex items-center gap-1 overflow-clip rounded-[10px] px-3 py-2 transition-all duration-150 active:scale-95 ${
+                tab === key
+                  ? 'bg-white shadow-[0px_2px_4px_0px_rgba(58,58,58,0.08),0px_4px_6px_0px_rgba(58,58,58,0.06)]'
+                  : 'hover:bg-white/60'
               }`}
             >
               <span className={`text-sm font-bold ${tab === key ? 'text-secondary-7' : 'text-secondary-6'}`}>
@@ -107,8 +140,11 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
             </div>
 
             <div className="flex w-full items-center justify-between">
-              <div className="flex max-w-[380px] flex-1 items-center gap-2 rounded-xl border border-secondary-3 py-2 pl-4 pr-2">
-                <span className="flex-1 text-sm text-secondary-6">Search by Alert Name, metrics, or service name</span>
+              <div className="flex max-w-[380px] flex-1 items-center gap-2 rounded-xl border border-secondary-3 py-2 pl-4 pr-2 transition-colors duration-150 focus-within:border-primary-4">
+                <input
+                  className="flex-1 bg-transparent text-sm text-secondary-7 outline-none placeholder:text-secondary-6"
+                  placeholder="Search by Alert Name, metrics, or service name"
+                />
                 <img src={searchIcon} alt="" className="size-6" />
               </div>
               <div className="flex items-center gap-3">
@@ -121,7 +157,7 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
                     Add Services
                   </Button>
                   {showPicker && (
-                    <div className="absolute right-0 z-10 mt-2 max-h-64 w-64 overflow-y-auto rounded-xl border border-secondary-3 bg-white p-2 shadow-card">
+                    <div className="absolute right-0 z-10 mt-2 max-h-64 w-64 origin-top-right animate-[dropdown-in_150ms_ease-out] overflow-y-auto rounded-xl border border-secondary-3 bg-white p-2 shadow-card">
                       {availableToAdd.length === 0 ? (
                         <p className="p-2 text-xs text-secondary-6">All catalog services already added.</p>
                       ) : (
@@ -130,7 +166,7 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
                             key={item.id}
                             type="button"
                             onClick={() => addService(item)}
-                            className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm hover:bg-secondary-1"
+                            className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors duration-150 hover:bg-secondary-1 active:scale-[0.98]"
                           >
                             <span className="font-bold text-secondary-7">{item.name}</span>
                             <span className="text-xs text-secondary-6">{item.capacity}</span>
@@ -145,7 +181,10 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
 
             <div className="flex w-full flex-col gap-2">
               {rule.services.map((service) => (
-                <div key={service.id} className="flex w-full items-center gap-6 rounded-2xl border border-secondary-2 p-6">
+                <div
+                  key={service.id}
+                  className="flex w-full items-center gap-6 rounded-2xl border border-secondary-2 p-6 transition-colors duration-150 hover:border-secondary-4"
+                >
                   <div className="flex flex-1 items-center gap-2">
                     <img src={serviceDot} alt="" className="size-4" />
                     <p className="flex-1 truncate text-sm font-bold text-secondary-7">{service.name}</p>
@@ -161,8 +200,8 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
                   <button
                     type="button"
                     aria-label={`Remove ${service.name}`}
-                    onClick={() => removeService(service.id)}
-                    className="flex items-center gap-1 rounded-xl border border-secondary-3 bg-white p-2"
+                    onClick={() => setServiceToRemove(service)}
+                    className="flex items-center gap-1 rounded-xl border border-secondary-3 bg-white p-2 transition-all duration-150 hover:border-red-3 hover:bg-red-2 active:scale-95"
                   >
                     <img src={deleteSmall} alt="" className="size-4" />
                   </button>
@@ -176,6 +215,26 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
           </div>
         )}
       </div>
+
+      {serviceToRemove && (
+        <ConfirmModal
+          title="Remove this service?"
+          confirmLabel="Remove Service"
+          warning="This action can't be undone."
+          onClose={() => setServiceToRemove(null)}
+          onConfirm={confirmRemoveService}
+          message={
+            <>
+              <span className="font-extrabold">{serviceToRemove.name}</span>
+              <span className="font-normal">
+                {' '}
+                will stop being watched by <span className="font-extrabold">{rule.ruleName}</span>. You can add it
+                back at any time from the services list.
+              </span>
+            </>
+          }
+        />
+      )}
     </div>
   );
 }

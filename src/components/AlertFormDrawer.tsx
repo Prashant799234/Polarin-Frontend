@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { AlertRule, Severity } from '../types';
 import Button from './Button';
 import closeIcon from '../assets/icons/close.svg';
@@ -18,7 +18,7 @@ const COMPARATORS = ['>', '<', '>=', '<='];
 const SEVERITIES: Severity[] = ['Critical', 'Info'];
 
 const fieldClass =
-  'w-full rounded-xl border border-secondary-3 px-4 py-2 text-sm text-secondary-7 outline-none focus:border-primary-4';
+  'w-full rounded-xl border border-secondary-3 px-4 py-2 text-sm text-secondary-7 outline-none transition-colors duration-150 hover:border-secondary-4 focus:border-primary-4';
 const labelClass = 'text-sm font-bold text-secondary-7';
 
 export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Props) {
@@ -32,6 +32,17 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
   const [selectedServices, setSelectedServices] = useState<string[]>(
     initial?.services.map((s) => s.name) ?? [],
   );
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const handleClose = () => {
+    setVisible(false);
+    window.setTimeout(onClose, 200);
+  };
 
   const canSave = ruleName.trim().length > 0 && threshold.trim().length > 0 && selectedServices.length > 0;
 
@@ -48,16 +59,23 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-black/80" onClick={onClose}>
+    <div
+      className={`fixed inset-0 z-40 flex justify-end bg-black/80 transition-opacity duration-200 ease-out ${
+        visible ? 'opacity-100' : 'opacity-0'
+      }`}
+      onClick={handleClose}
+    >
       <div
-        className="flex h-full w-[560px] max-w-[95vw] flex-col items-start overflow-y-auto bg-white py-6"
+        className={`flex h-full w-[560px] max-w-[95vw] flex-col items-start overflow-y-auto bg-white py-6 transition-transform duration-200 ease-out ${
+          visible ? 'translate-x-0' : 'translate-x-full'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex w-full items-center justify-between border-b border-secondary-2 px-6 pb-6">
           <p className="font-inter text-xl font-extrabold text-secondary-7">
             {mode === 'create' ? 'Create Alert Rule' : 'Edit Alert Rule'}
           </p>
-          <Button variant="secondary" icon={<img src={closeIcon} alt="" className="size-5" />} onClick={onClose}>
+          <Button variant="secondary" icon={<img src={closeIcon} alt="" className="size-5" />} onClick={handleClose}>
             Close
           </Button>
         </div>
@@ -76,22 +94,25 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
           <div className="flex flex-col gap-1.5">
             <label className={labelClass}>Severity</label>
             <div className="flex gap-2">
-              {SEVERITIES.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setSeverity(s)}
-                  className={`flex-1 rounded-xl border px-4 py-2 text-sm font-bold ${
-                    severity === s
-                      ? s === 'Critical'
-                        ? 'border-red-3 bg-red-2 text-red-5'
-                        : 'border-blue-3 bg-blue-2 text-blue-5'
-                      : 'border-secondary-3 bg-white text-secondary-6'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
+              {SEVERITIES.map((s) => {
+                const active = severity === s;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setSeverity(s)}
+                    className={`flex-1 rounded-xl border px-4 py-2 text-sm font-bold transition-all duration-150 active:scale-95 ${
+                      active
+                        ? s === 'Critical'
+                          ? 'border-red-3 bg-red-2 text-red-5'
+                          : 'border-blue-3 bg-blue-2 text-blue-5'
+                        : 'border-secondary-3 bg-white text-secondary-6 hover:border-secondary-4 hover:bg-secondary-1'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -101,13 +122,13 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
               <select
                 value={aggregation}
                 onChange={(e) => setAggregation(e.target.value)}
-                className={`${fieldClass} w-[90px] font-mono`}
+                className={`${fieldClass} w-[90px] cursor-pointer font-mono`}
               >
                 {AGGREGATIONS.map((a) => (
                   <option key={a}>{a}</option>
                 ))}
               </select>
-              <select value={metric} onChange={(e) => setMetric(e.target.value)} className={fieldClass}>
+              <select value={metric} onChange={(e) => setMetric(e.target.value)} className={`${fieldClass} cursor-pointer`}>
                 {metricOptions.map((m) => (
                   <option key={m}>{m}</option>
                 ))}
@@ -115,7 +136,7 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
               <select
                 value={comparator}
                 onChange={(e) => setComparator(e.target.value)}
-                className={`${fieldClass} w-[70px] font-mono`}
+                className={`${fieldClass} w-[70px] cursor-pointer font-mono`}
               >
                 {COMPARATORS.map((c) => (
                   <option key={c}>{c}</option>
@@ -136,7 +157,7 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
               <select
                 value={eventType}
                 onChange={(e) => setEventType(e.target.value)}
-                className={`${fieldClass} appearance-none pr-10`}
+                className={`${fieldClass} cursor-pointer appearance-none pr-10`}
               >
                 {metricOptions.map((m) => (
                   <option key={m}>{m}</option>
@@ -154,12 +175,17 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
                 return (
                   <label
                     key={service.id}
-                    className={`flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 ${
-                      checked ? 'bg-primary-2' : ''
+                    className={`flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 transition-colors duration-150 ${
+                      checked ? 'bg-primary-2' : 'hover:bg-secondary-1'
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      <input type="checkbox" checked={checked} onChange={() => toggleService(service.name)} />
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleService(service.name)}
+                        className="accent-primary-4"
+                      />
                       <span className="text-sm font-bold text-secondary-7">{service.name}</span>
                     </span>
                     <span className="font-mono text-[10px] text-secondary-6">{service.capacity}</span>
@@ -171,7 +197,7 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
         </div>
 
         <div className="mt-auto flex w-full items-center justify-end gap-3 border-t border-secondary-2 px-6 py-4">
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={handleClose}>
             Cancel
           </Button>
           <Button
@@ -179,7 +205,6 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
             icon={mode === 'create' ? <img src={addIcon} alt="" className="size-5 invert" /> : undefined}
             disabled={!canSave}
             onClick={handleSave}
-            className={!canSave ? 'opacity-50' : ''}
           >
             {mode === 'create' ? 'Create Alert' : 'Save Changes'}
           </Button>

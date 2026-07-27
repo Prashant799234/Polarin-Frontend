@@ -15,14 +15,22 @@ export default function Header() {
         {NAV_ITEMS.map((item) => {
           const active = item === 'Settings';
           return (
-            <div key={item} className="flex flex-col items-start gap-4">
+            <button key={item} type="button" className="group flex flex-col items-start gap-4">
               <div className="flex items-center justify-center px-4 pb-0">
-                <span className={`font-lato text-sm font-bold ${active ? 'text-primary-5' : 'text-secondary-7'}`}>
+                <span
+                  className={`font-lato text-sm font-bold transition-colors duration-150 ${
+                    active ? 'text-primary-5' : 'text-secondary-7 group-hover:text-primary-5'
+                  }`}
+                >
                   {item}
                 </span>
               </div>
-              <div className={`h-0.5 w-full ${active ? 'bg-primary-5' : 'bg-transparent'}`} />
-            </div>
+              <div
+                className={`h-0.5 w-full transition-colors duration-150 ${
+                  active ? 'bg-primary-5' : 'bg-transparent group-hover:bg-primary-3'
+                }`}
+              />
+            </button>
           );
         })}
       </nav>
@@ -31,7 +39,7 @@ export default function Header() {
         <button
           type="button"
           aria-label="Notifications"
-          className="flex size-8 items-center justify-center rounded-full border-[0.5px] border-secondary-2 bg-secondary-1"
+          className="flex size-8 items-center justify-center rounded-full border-[0.5px] border-secondary-2 bg-secondary-1 transition-colors duration-150 hover:bg-secondary-2 active:scale-90"
         >
           <img src={notificationsIcon} alt="" className="size-6" />
         </button>

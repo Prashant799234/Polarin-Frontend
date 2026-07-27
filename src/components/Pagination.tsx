@@ -23,8 +23,10 @@ export default function Pagination({ total, page, pageSize, onPageChange }: Prop
             type="button"
             disabled={page <= 1}
             onClick={() => onPageChange(page - 1)}
-            className={`flex items-center justify-center overflow-hidden rounded-lg border p-2 ${
-              page <= 1 ? 'border-secondary-4 bg-secondary-4' : 'border-secondary-3 bg-white'
+            className={`flex items-center justify-center overflow-hidden rounded-lg border p-2 transition-all duration-150 active:scale-90 ${
+              page <= 1
+                ? 'border-secondary-4 bg-secondary-4'
+                : 'border-secondary-3 bg-white hover:border-primary-4 hover:bg-secondary-1'
             }`}
           >
             <img src={chevronBackward} alt="Previous" className="size-4" />
@@ -38,18 +40,23 @@ export default function Pagination({ total, page, pageSize, onPageChange }: Prop
             type="button"
             disabled={page >= pageCount}
             onClick={() => onPageChange(page + 1)}
-            className={`flex items-center justify-center overflow-hidden rounded-lg border p-2 ${
-              page >= pageCount ? 'border-secondary-4 bg-secondary-4' : 'border-secondary-3 bg-white'
+            className={`flex items-center justify-center overflow-hidden rounded-lg border p-2 transition-all duration-150 active:scale-90 ${
+              page >= pageCount
+                ? 'border-secondary-4 bg-secondary-4'
+                : 'border-secondary-3 bg-white hover:border-primary-4 hover:bg-secondary-1'
             }`}
           >
             <img src={chevronForward} alt="Next" className="size-4" />
           </button>
         </div>
         <div className="flex items-center gap-2 overflow-hidden">
-          <div className="flex items-center gap-1 rounded-lg border border-secondary-3 bg-white px-3 py-1">
+          <button
+            type="button"
+            className="flex items-center gap-1 rounded-lg border border-secondary-3 bg-white px-3 py-1 transition-colors duration-150 hover:border-secondary-4 hover:bg-secondary-1"
+          >
             <span className="text-sm text-[#324158]">{pageSize} / page</span>
             <img src={keyboardArrowDown} alt="" className="size-4" />
-          </div>
+          </button>
         </div>
       </div>
     </div>

@@ -37,10 +37,13 @@ export default function Sidebar() {
           </div>
           <div className="flex w-full flex-col items-start gap-0.5">
             {group.items.map((item) => (
-              <div
+              <button
                 key={item.label}
-                className={`flex w-full items-center rounded-r-2xl py-2 pl-6 pr-4 ${
-                  item.active ? 'bg-white shadow-[0px_1px_1px_0px_rgba(58,58,58,0.05)]' : ''
+                type="button"
+                className={`flex w-full items-center rounded-r-2xl py-2 pl-6 pr-4 text-left transition-colors duration-150 active:scale-[0.99] ${
+                  item.active
+                    ? 'bg-white shadow-[0px_1px_1px_0px_rgba(58,58,58,0.05)]'
+                    : 'hover:bg-white/60'
                 }`}
               >
                 <p
@@ -48,7 +51,7 @@ export default function Sidebar() {
                 >
                   {item.label}
                 </p>
-              </div>
+              </button>
             ))}
           </div>
         </div>

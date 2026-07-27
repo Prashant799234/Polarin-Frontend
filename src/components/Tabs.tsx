@@ -23,15 +23,15 @@ export default function Tabs({ counts, value, onChange }: Props) {
             key={key}
             type="button"
             onClick={() => onChange(key)}
-            className={`flex h-10 items-center gap-1 rounded-full border px-4 py-2 text-xs ${
+            className={`flex h-10 items-center gap-1 rounded-full border px-4 py-2 text-xs transition-all duration-150 active:scale-95 ${
               selected
                 ? 'border-primary-5 bg-primary-5 text-secondary-1'
-                : 'border-secondary-3 bg-white text-secondary-7'
+                : 'border-secondary-3 bg-white text-secondary-7 hover:border-secondary-4 hover:bg-secondary-1'
             }`}
           >
             <span>{TAB_LABELS[key]}</span>
             <span
-              className={`inline-flex items-center justify-center rounded-lg border px-2 py-0.5 text-[10px] font-bold ${
+              className={`inline-flex items-center justify-center rounded-lg border px-2 py-0.5 text-[10px] font-bold transition-colors duration-150 ${
                 selected
                   ? 'border-primary-4 bg-primary-3 text-primary-6'
                   : 'border-secondary-3 bg-secondary-2 text-secondary-7'

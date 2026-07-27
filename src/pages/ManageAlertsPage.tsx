@@ -10,6 +10,8 @@ import EmptyState from '../components/EmptyState';
 import AlertDetailsDrawer from '../components/AlertDetailsDrawer';
 import AlertFormDrawer from '../components/AlertFormDrawer';
 import DeleteModal from '../components/DeleteModal';
+import ToastStack from '../components/ToastStack';
+import { useToasts } from '../hooks/useToasts';
 import verifiedUser from '../assets/icons/verified-user.svg';
 import addIcon from '../assets/icons/add.svg';
 import searchIcon from '../assets/icons/search.svg';
@@ -41,6 +43,7 @@ export default function ManageAlertsPage() {
   const [tab, setTab] = useState<TabKey>('active');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const { toasts, push, remove } = useToasts();
 
   const [selectedRule, setSelectedRule] = useState<AlertRule | null>(null);
   const [formState, setFormState] = useState<{ mode: 'create' | 'edit'; rule?: AlertRule } | null>(null);
@@ -85,9 +88,8 @@ export default function ManageAlertsPage() {
 
   const handleSave = (data: Omit<AlertRule, 'id' | 'status' | 'activeAlertCount' | 'timestamp'>) => {
     if (formState?.mode === 'edit' && formState.rule) {
-      setAlerts((prev) =>
-        prev.map((a) => (a.id === formState.rule!.id ? { ...a, ...data } : a)),
-      );
+      setAlerts((prev) => prev.map((a) => (a.id === formState.rule!.id ? { ...a, ...data } : a)));
+      push(`${data.ruleName} updated successfully`);
     } else {
       const newRule: AlertRule = {
         ...data,
@@ -99,6 +101,7 @@ export default function ManageAlertsPage() {
       setAlerts((prev) => [newRule, ...prev]);
       setTab('active');
       setPage(1);
+      push(`${data.ruleName} created successfully`);
     }
     setFormState(null);
   };
@@ -106,6 +109,7 @@ export default function ManageAlertsPage() {
   const handleDeleteConfirm = () => {
     if (!ruleToDelete) return;
     setAlerts((prev) => prev.filter((a) => a.id !== ruleToDelete.id));
+    push(`${ruleToDelete.ruleName} deleted`, 'error');
     setRuleToDelete(null);
     setSelectedRule(null);
   };
@@ -158,7 +162,7 @@ export default function ManageAlertsPage() {
             ) : (
               <div className="flex w-full flex-col items-start gap-3">
                 <div className="flex w-full items-center justify-between">
-                  <div className="flex max-w-[380px] flex-1 items-center gap-2 rounded-xl border border-secondary-3 py-2 pl-4 pr-2">
+                  <div className="flex max-w-[380px] flex-1 items-center gap-2 rounded-xl border border-secondary-3 py-2 pl-4 pr-2 transition-colors duration-150 focus-within:border-primary-4 hover:border-secondary-4">
                     <input
                       value={search}
                       onChange={(e) => {
@@ -170,10 +174,13 @@ export default function ManageAlertsPage() {
                     />
                     <img src={searchIcon} alt="" className="size-6" />
                   </div>
-                  <div className="flex w-[150px] items-center gap-1 rounded-xl border border-secondary-3 py-2 pl-4 pr-2">
-                    <span className="flex-1 text-sm font-bold text-secondary-7">Last 1 Month</span>
+                  <button
+                    type="button"
+                    className="flex w-[150px] items-center gap-1 rounded-xl border border-secondary-3 py-2 pl-4 pr-2 transition-colors duration-150 hover:border-secondary-4 hover:bg-secondary-1"
+                  >
+                    <span className="flex-1 text-left text-sm font-bold text-secondary-7">Last 1 Month</span>
                     <img src={keyboardArrowDown} alt="" className="size-6" />
-                  </div>
+                  </button>
                 </div>
 
                 {pageRules.length === 0 ? (
@@ -205,6 +212,7 @@ export default function ManageAlertsPage() {
           onEdit={() => openEdit(selectedRule)}
           onDelete={() => setRuleToDelete(selectedRule)}
           onUpdateServices={updateServices}
+          onToast={push}
         />
       )}
 
@@ -220,6 +228,8 @@ export default function ManageAlertsPage() {
       {ruleToDelete && (
         <DeleteModal rule={ruleToDelete} onClose={() => setRuleToDelete(null)} onConfirm={handleDeleteConfirm} />
       )}
+
+      <ToastStack toasts={toasts} onDone={remove} />
     </div>
   );
 }
