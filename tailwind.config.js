@@ -37,6 +37,7 @@ export default {
         },
         orange: {
           3: '#ffd8b8',
+          5: '#e26717',
         },
       },
       fontFamily: {

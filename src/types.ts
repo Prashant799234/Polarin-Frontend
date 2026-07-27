@@ -1,24 +1,51 @@
 export type Severity = 'Critical' | 'Info';
-export type AlertStatus = 'active' | 'normal';
+export type ProductFamily = 'VC' | 'Wave' | 'Port';
+export type Direction = 'drops below' | 'rises above' | 'reaches';
+
+export interface MetricDef {
+  key: string;
+  label: string;
+  description: string;
+  unit: string;
+  direction: Direction;
+  comparator: '<' | '>' | '=';
+  defaultThreshold: string;
+  severity: Severity;
+  products: ProductFamily[];
+}
+
+export interface CatalogService {
+  name: string;
+  family: ProductFamily;
+  capacity: string;
+}
 
 export interface AlertService {
   id: string;
   name: string;
-  activeAlerts: number;
+  family: ProductFamily;
   capacity: string;
+}
+
+export interface HistoryEntry {
+  id: string;
+  service: string;
+  status: 'active' | 'resolved';
+  observed: string;
+  raisedAt: string;
+  clearedAt?: string;
 }
 
 export interface AlertRule {
   id: string;
   ruleName: string;
+  metricKey: string;
   severity: Severity;
-  status: AlertStatus;
-  services: AlertService[];
   aggregation: string;
-  metric: string;
   comparator: string;
   threshold: string;
-  eventType: string;
-  activeAlertCount: number;
-  timestamp: string;
+  holdWindow: string;
+  services: AlertService[];
+  history: HistoryEntry[];
+  createdAt: string;
 }

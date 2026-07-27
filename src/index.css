@@ -16,6 +16,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 500,
+    'GRAD' 0,
+    'opsz' 20;
+  line-height: 1;
+  display: inline-block;
+  vertical-align: middle;
+  user-select: none;
+}
+
 @keyframes dropdown-in {
   from {
     opacity: 0;

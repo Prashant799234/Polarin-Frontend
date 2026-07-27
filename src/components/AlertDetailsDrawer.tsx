@@ -3,16 +3,11 @@ import type { AlertRule, AlertService } from '../types';
 import SeverityBadge from './Badge';
 import Button from './Button';
 import ConfirmModal from './ConfirmModal';
-import closeIcon from '../assets/icons/close.svg';
-import editIcon from '../assets/icons/edit.svg';
-import deleteIcon from '../assets/icons/delete.svg';
-import deleteSmall from '../assets/icons/delete-small.svg';
-import moreVert from '../assets/icons/more-vert.svg';
-import searchIcon from '../assets/icons/search.svg';
-import keyboardArrowDown from '../assets/icons/keyboard-arrow-down.svg';
-import addIcon from '../assets/icons/add.svg';
-import serviceDot from '../assets/icons/service-dot.svg';
-import { serviceCatalog } from '../data/mockAlerts';
+import Icon from './Icon';
+import Tooltip from './Tooltip';
+import { serviceCatalog } from '../data/catalog';
+import { activeEntryForService, conditionText, entriesForService } from '../utils/rules';
+import { formatDateTime, formatDuration } from '../utils/dates';
 
 interface Props {
   rule: AlertRule;
@@ -26,7 +21,9 @@ interface Props {
 export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, onUpdateServices, onToast }: Props) {
   const [tab, setTab] = useState<'services' | 'history'>('services');
   const [showPicker, setShowPicker] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [serviceToRemove, setServiceToRemove] = useState<AlertService | null>(null);
+  const [historyFilter, setHistoryFilter] = useState('all');
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -51,11 +48,15 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
   const addService = (catalogItem: (typeof serviceCatalog)[number]) => {
     onUpdateServices([
       ...rule.services,
-      { id: `${catalogItem.id}-${Date.now()}`, name: catalogItem.name, activeAlerts: 0, capacity: catalogItem.capacity },
+      { id: `${catalogItem.name}-${Date.now()}`, name: catalogItem.name, family: catalogItem.family, capacity: catalogItem.capacity },
     ]);
     onToast(`${catalogItem.name} added to ${rule.ruleName}`);
     setShowPicker(false);
   };
+
+  const historyRows = rule.history
+    .filter((h) => historyFilter === 'all' || h.service === historyFilter)
+    .sort((a, b) => new Date(b.raisedAt).getTime() - new Date(a.raisedAt).getTime());
 
   return (
     <div
@@ -65,47 +66,36 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
       onClick={handleClose}
     >
       <div
-        className={`flex h-full w-[800px] max-w-[95vw] flex-col items-start gap-6 overflow-y-auto bg-white py-6 transition-transform duration-200 ease-out ${
+        className={`flex h-full w-[800px] max-w-[95vw] flex-col bg-white transition-transform duration-200 ease-out ${
           visible ? 'translate-x-0' : 'translate-x-full'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex w-full flex-col items-start justify-center gap-4 px-6">
+        <div className="flex flex-none flex-col items-start justify-center gap-4 px-6 pt-6">
           <div className="flex w-full items-center justify-between">
             <div className="flex flex-col items-start justify-end">
               <div className="flex items-end gap-2">
                 <p className="font-inter text-xl font-extrabold text-secondary-7">{rule.ruleName}</p>
                 <SeverityBadge severity={rule.severity} />
               </div>
-              <p className="w-[336px] text-sm text-secondary-6">
-                {rule.aggregation} {rule.metric} {rule.comparator} {rule.threshold}
-              </p>
+              <p className="text-sm text-secondary-6">{conditionText(rule)} &middot; held {rule.holdWindow}</p>
             </div>
-            <Button variant="secondary" icon={<img src={closeIcon} alt="" className="size-5" />} onClick={handleClose}>
+            <Button variant="secondary" icon={<Icon name="close" size={20} />} onClick={handleClose}>
               Close
             </Button>
           </div>
 
-          <div className="flex w-full items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="secondary" icon={<img src={editIcon} alt="" className="size-5" />} onClick={onEdit}>
-                Edit Rule
-              </Button>
-              <Button variant="secondary" icon={<img src={deleteIcon} alt="" className="size-5" />} onClick={onDelete}>
-                Delete
-              </Button>
-            </div>
-            <button
-              type="button"
-              aria-label="More options"
-              className="rounded-full p-1.5 transition-colors duration-150 hover:bg-secondary-1 active:scale-95"
-            >
-              <img src={moreVert} alt="" className="size-6" />
-            </button>
+          <div className="flex w-full items-center gap-3">
+            <Button variant="secondary" icon={<Icon name="edit" size={20} />} onClick={onEdit}>
+              Edit Rule
+            </Button>
+            <Button variant="secondary" icon={<Icon name="delete" size={20} />} onClick={onDelete}>
+              Delete
+            </Button>
           </div>
         </div>
 
-        <div className="flex w-full items-center gap-0.5 border-y-[0.5px] border-secondary-2 bg-secondary-1 px-6 py-1 shadow-[0px_0.5px_2px_0px_rgba(96,97,112,0.16)]">
+        <div className="mt-4 flex w-full flex-none items-center gap-0.5 border-y-[0.5px] border-secondary-2 bg-secondary-1 px-6 py-1 shadow-[0px_0.5px_2px_0px_rgba(96,97,112,0.16)]">
           {(['services', 'history'] as const).map((key) => (
             <button
               key={key}
@@ -121,37 +111,26 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
                 {key === 'services' ? 'Services' : 'Alert History'}
               </span>
               <span className="inline-flex items-center justify-center rounded-lg border border-secondary-3 bg-secondary-2 px-2 py-0.5 text-[10px] font-bold text-secondary-7">
-                {key === 'services' ? rule.services.length : 0}
+                {key === 'services' ? rule.services.length : rule.history.length}
               </span>
             </button>
           ))}
         </div>
 
-        {tab === 'services' ? (
-          <div className="flex w-full flex-col items-start gap-4 px-6">
-            <div className="flex w-full flex-col items-start">
-              <p className="font-lato text-base font-extrabold text-secondary-7">Services this alert watches</p>
-              <p className="text-sm text-secondary-6">
-                You can add or remove individual services on this alert at any time. Only active alerts show
-                inline - closed ones link into the full history.
-              </p>
-            </div>
-
-            <div className="flex w-full items-center justify-between">
-              <div className="flex max-w-[380px] flex-1 items-center gap-2 rounded-xl border border-secondary-3 py-2 pl-4 pr-2 transition-colors duration-150 focus-within:border-primary-4">
-                <input
-                  className="flex-1 bg-transparent text-sm text-secondary-7 outline-none placeholder:text-secondary-6"
-                  placeholder="Search by Alert Name, metrics, or service name"
-                />
-                <img src={searchIcon} alt="" className="size-6" />
+        <div className="flex-1 overflow-y-auto px-6 pb-6 pt-6">
+          {tab === 'services' ? (
+            <div className="flex w-full flex-col items-start gap-4">
+              <div className="flex w-full flex-col items-start">
+                <p className="font-lato text-base font-extrabold text-secondary-7">Services this alert watches</p>
+                <p className="text-sm text-secondary-6">
+                  A service can have at most one active alert at a time. Click a service to see its current alert,
+                  if any.
+                </p>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex w-[150px] items-center gap-1 rounded-xl border border-secondary-3 py-2 pl-4 pr-2">
-                  <span className="flex-1 text-sm font-bold text-secondary-7">Last 1 Month</span>
-                  <img src={keyboardArrowDown} alt="" className="size-6" />
-                </div>
+
+              <div className="flex w-full items-center justify-end">
                 <div className="relative">
-                  <Button variant="secondary" icon={<img src={addIcon} alt="" className="size-5" />} onClick={() => setShowPicker((v) => !v)}>
+                  <Button variant="secondary" icon={<Icon name="add" size={20} />} onClick={() => setShowPicker((v) => !v)}>
                     Add Services
                   </Button>
                   {showPicker && (
@@ -161,7 +140,7 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
                       ) : (
                         availableToAdd.map((item) => (
                           <button
-                            key={item.id}
+                            key={item.name}
                             type="button"
                             onClick={() => addService(item)}
                             className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors duration-150 hover:bg-secondary-1 active:scale-[0.98]"
@@ -175,43 +154,150 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
                   )}
                 </div>
               </div>
-            </div>
 
-            <div className="flex w-full flex-col gap-2">
-              {rule.services.map((service) => (
-                <div
-                  key={service.id}
-                  className="flex w-full items-center gap-6 rounded-2xl border border-secondary-2 p-6 transition-colors duration-150 hover:border-secondary-4"
-                >
-                  <div className="flex flex-1 items-center gap-2">
-                    <img src={serviceDot} alt="" className="size-4" />
-                    <p className="flex-1 truncate text-sm font-bold text-secondary-7">{service.name}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center rounded-3xl border border-secondary-3 bg-secondary-1 px-2 py-1 text-[10px] text-secondary-6">
-                      {service.activeAlerts > 0 ? `${service.activeAlerts} Active alerts` : 'No alerts yet'}
-                    </span>
-                    <span className="inline-flex items-center justify-center rounded-3xl border border-secondary-3 bg-secondary-1 px-2 py-1 font-mono text-[10px] text-secondary-7">
-                      {service.capacity}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    aria-label={`Remove ${service.name}`}
-                    onClick={() => setServiceToRemove(service)}
-                    className="flex items-center gap-1 rounded-xl border border-secondary-3 bg-white p-2 transition-all duration-150 hover:border-red-3 hover:bg-red-2 active:scale-95"
-                  >
-                    <img src={deleteSmall} alt="" className="size-4" />
-                  </button>
-                </div>
-              ))}
+              <div className="flex w-full flex-col gap-2">
+                {rule.services.map((service) => {
+                  const activeEntry = activeEntryForService(rule, service.name);
+                  const open = expanded === service.name;
+                  return (
+                    <div key={service.id} className="w-full rounded-2xl border border-secondary-2 transition-colors duration-150 hover:border-secondary-4">
+                      <button
+                        type="button"
+                        onClick={() => setExpanded(open ? null : service.name)}
+                        className="flex w-full items-center gap-6 p-6 text-left"
+                      >
+                        <Icon
+                          name="expand_more"
+                          size={18}
+                          className={`text-secondary-6 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
+                        />
+                        <div className="flex flex-1 items-center gap-2">
+                          <span className={`size-2 rounded-full ${activeEntry ? 'bg-red-4' : 'bg-primary-4'}`} />
+                          <p className="flex-1 truncate text-sm font-bold text-secondary-7">{service.name}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`inline-flex items-center justify-center rounded-3xl border px-2 py-1 text-[10px] ${
+                              activeEntry ? 'border-red-3 bg-red-2 text-red-5' : 'border-secondary-3 bg-secondary-1 text-secondary-6'
+                            }`}
+                          >
+                            {activeEntry ? 'Active alert' : 'No alerts yet'}
+                          </span>
+                          <span className="inline-flex items-center justify-center rounded-3xl border border-secondary-3 bg-secondary-1 px-2 py-1 font-mono text-[10px] text-secondary-7">
+                            {service.capacity}
+                          </span>
+                        </div>
+                        <Tooltip label={`Remove ${service.name}`}>
+                          <span
+                            role="button"
+                            aria-label={`Remove ${service.name}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setServiceToRemove(service);
+                            }}
+                            className="flex items-center gap-1 rounded-xl border border-secondary-3 bg-white p-2 transition-all duration-150 hover:border-red-3 hover:bg-red-2 active:scale-95"
+                          >
+                            <Icon name="delete" size={16} />
+                          </span>
+                        </Tooltip>
+                      </button>
+                      {open && (
+                        <div className="border-t border-secondary-2 px-6 py-4">
+                          {activeEntry ? (
+                            <div className="flex flex-col gap-1 rounded-xl bg-red-2/40 p-4">
+                              <p className="text-sm font-bold text-red-5">Currently breaching</p>
+                              <p className="text-sm text-secondary-7">
+                                Observed <span className="font-bold">{activeEntry.observed}</span> &middot; raised{' '}
+                                {formatDateTime(activeEntry.raisedAt)} &middot;{' '}
+                                <span className="font-bold text-red-5">{formatDuration(activeEntry.raisedAt)}</span>
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-secondary-6">No active alert on this service right now.</p>
+                          )}
+                          {entriesForService(rule, service.name).filter((e) => e.status === 'resolved').length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTab('history');
+                                setHistoryFilter(service.name);
+                              }}
+                              className="mt-3 text-sm font-bold text-primary-5 hover:underline"
+                            >
+                              See past alerts for this service in history &rarr;
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="flex w-full flex-1 items-center justify-center px-6 py-16 text-sm text-secondary-6">
-            No alert history recorded for this rule yet.
-          </div>
-        )}
+          ) : (
+            <div className="flex w-full flex-col items-start gap-4">
+              <div className="flex w-full flex-col items-start">
+                <p className="font-lato text-base font-extrabold text-secondary-7">Alert history</p>
+                <p className="text-sm text-secondary-6">Every past and current alert this rule has raised, newest first.</p>
+              </div>
+
+              {rule.history.length > 1 && (
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-bold text-secondary-7">Service</label>
+                  <select
+                    value={historyFilter}
+                    onChange={(e) => setHistoryFilter(e.target.value)}
+                    className="cursor-pointer rounded-xl border border-secondary-3 px-3 py-1.5 text-sm text-secondary-7 outline-none transition-colors duration-150 hover:border-secondary-4 focus:border-primary-4"
+                  >
+                    <option value="all">All services ({rule.history.length})</option>
+                    {rule.services.map((s) => (
+                      <option key={s.id} value={s.name}>
+                        {s.name} ({rule.history.filter((h) => h.service === s.name).length})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {historyRows.length === 0 ? (
+                <p className="py-8 text-sm text-secondary-6">No alert history recorded for this rule yet.</p>
+              ) : (
+                <div className="flex w-full flex-col gap-3">
+                  {historyRows.map((entry) => (
+                    <div key={entry.id} className="flex w-full items-start gap-4 rounded-2xl border border-secondary-2 p-4">
+                      <span className={`mt-1.5 size-2.5 shrink-0 rounded-full ${entry.status === 'active' ? 'bg-red-4' : 'bg-primary-4'}`} />
+                      <div className="flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-bold text-secondary-7">{entry.service}</p>
+                          <span
+                            className={`inline-flex items-center justify-center rounded-3xl border px-2 py-0.5 text-[10px] ${
+                              entry.status === 'active' ? 'border-red-3 bg-red-2 text-red-5' : 'border-primary-3 bg-primary-2 text-primary-5'
+                            }`}
+                          >
+                            {entry.status === 'active' ? 'Active' : 'Returned to normal'}
+                          </span>
+                          <span className="font-mono text-[11px] text-secondary-6">observed {entry.observed}</span>
+                        </div>
+                        <p className="mt-1 text-sm text-secondary-6">
+                          Raised {formatDateTime(entry.raisedAt)}
+                          {entry.status === 'resolved' && entry.clearedAt ? (
+                            <>
+                              {' '}
+                              &middot; Cleared {formatDateTime(entry.clearedAt)} &middot; Duration{' '}
+                              {formatDuration(entry.raisedAt, entry.clearedAt)}
+                            </>
+                          ) : (
+                            <> &middot; <span className="font-bold text-red-5">{formatDuration(entry.raisedAt)}</span></>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {serviceToRemove && (

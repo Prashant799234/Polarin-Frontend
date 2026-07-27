@@ -1,6 +1,4 @@
-import chevronBackward from '../assets/icons/chevron-backward.svg';
-import chevronForward from '../assets/icons/chevron-forward.svg';
-import keyboardArrowDown from '../assets/icons/keyboard-arrow-down.svg';
+import Icon from './Icon';
 
 interface Props {
   total: number;
@@ -29,7 +27,7 @@ export default function Pagination({ total, page, pageSize, onPageChange }: Prop
                 : 'border-secondary-3 bg-white hover:border-primary-4 hover:bg-secondary-1'
             }`}
           >
-            <img src={chevronBackward} alt="Previous" className="size-4" />
+            <Icon name="chevron_left" size={16} className={page <= 1 ? 'text-white' : 'text-secondary-7'} />
           </button>
           <div className="flex flex-col items-center overflow-hidden rounded-lg border border-primary-4 bg-white px-[7px] py-px">
             <span className="flex h-[30px] w-[18px] items-center justify-center text-sm font-medium text-primary-4">
@@ -46,7 +44,7 @@ export default function Pagination({ total, page, pageSize, onPageChange }: Prop
                 : 'border-secondary-3 bg-white hover:border-primary-4 hover:bg-secondary-1'
             }`}
           >
-            <img src={chevronForward} alt="Next" className="size-4" />
+            <Icon name="chevron_right" size={16} className={page >= pageCount ? 'text-white' : 'text-secondary-7'} />
           </button>
         </div>
         <div className="flex items-center gap-2 overflow-hidden">
@@ -55,7 +53,7 @@ export default function Pagination({ total, page, pageSize, onPageChange }: Prop
             className="flex items-center gap-1 rounded-lg border border-secondary-3 bg-white px-3 py-1 transition-colors duration-150 hover:border-secondary-4 hover:bg-secondary-1"
           >
             <span className="text-sm text-[#324158]">{pageSize} / page</span>
-            <img src={keyboardArrowDown} alt="" className="size-4" />
+            <Icon name="keyboard_arrow_down" size={16} className="text-secondary-6" />
           </button>
         </div>
       </div>

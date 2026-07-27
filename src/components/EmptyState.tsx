@@ -1,5 +1,4 @@
-import verifiedUser from '../assets/icons/verified-user.svg';
-import addIcon from '../assets/icons/add.svg';
+import Icon from './Icon';
 import Button from './Button';
 
 interface Props {
@@ -12,13 +11,13 @@ export default function EmptyState({ title, description, onCreate }: Props) {
   return (
     <div className="flex w-full flex-1 flex-col items-center justify-center gap-4 py-24 text-center">
       <div className="flex items-center justify-center rounded-full bg-primary-2 p-4">
-        <img src={verifiedUser} alt="" className="size-10" />
+        <Icon name="verified_user" size={40} className="text-primary-5" />
       </div>
       <div className="flex max-w-[420px] flex-col items-center gap-1">
         <p className="font-lato text-base font-extrabold text-secondary-7">{title}</p>
         <p className="text-sm text-secondary-6">{description}</p>
       </div>
-      <Button variant="secondary" icon={<img src={addIcon} alt="" className="size-5" />} onClick={onCreate}>
+      <Button variant="secondary" icon={<Icon name="add" size={20} />} onClick={onCreate}>
         Create Alert
       </Button>
     </div>

@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import closeIcon from '../assets/icons/close.svg';
-import infoIcon from '../assets/icons/info.svg';
+import Icon from './Icon';
 import Button from './Button';
 
 interface Props {
@@ -40,7 +39,7 @@ export default function ConfirmModal({ title, message, warning, confirmLabel, on
       >
         <div className="flex w-full items-center gap-8 border-b border-secondary-2 p-6">
           <p className="flex-1 font-inter text-xl font-extrabold text-secondary-7">{title}</p>
-          <Button variant="secondary" icon={<img src={closeIcon} alt="" className="size-5" />} onClick={handleClose}>
+          <Button variant="secondary" icon={<Icon name="close" size={20} />} onClick={handleClose}>
             Close
           </Button>
         </div>
@@ -51,7 +50,7 @@ export default function ConfirmModal({ title, message, warning, confirmLabel, on
           {warning && (
             <div className="flex w-full items-start rounded-2xl border border-orange-3 bg-yellow-2 px-6 py-4">
               <div className="flex flex-1 items-center gap-2">
-                <img src={infoIcon} alt="" className="size-6" />
+                <Icon name="info" size={24} className="text-orange-5" filled />
                 <p className="flex-1 text-sm font-extrabold text-secondary-7">{warning}</p>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import logo from '../assets/brand/polarin-logo.png';
 import userAvatar from '../assets/brand/user-avatar.png';
-import notificationsIcon from '../assets/icons/notifications-unread.svg';
+import Icon from './Icon';
 
 const NAV_ITEMS = ['Dashboard', 'Services', 'Settings', 'Help'];
 
@@ -41,7 +41,7 @@ export default function Header() {
           aria-label="Notifications"
           className="flex size-8 items-center justify-center rounded-full border-[0.5px] border-secondary-2 bg-secondary-1 transition-colors duration-150 hover:bg-secondary-2 active:scale-90"
         >
-          <img src={notificationsIcon} alt="" className="size-6" />
+          <Icon name="notifications" size={20} className="text-secondary-7" />
         </button>
         <div className="flex items-center gap-2">
           <div className="size-8 overflow-hidden rounded-full border-[0.5px] border-secondary-2">
