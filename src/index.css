@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Lato', sans-serif;
+  background-color: #eef2f7;
+  color: #0a3954;
+  -webkit-font-smoothing: antialiased;
+}
