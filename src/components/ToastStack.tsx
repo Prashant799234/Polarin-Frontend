@@ -42,7 +42,7 @@ function Toast({ toast, onDone }: { toast: ToastItem; onDone: (id: number) => vo
 export default function ToastStack({ toasts, onDone }: { toasts: ToastItem[]; onDone: (id: number) => void }) {
   if (toasts.length === 0) return null;
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+    <div className="fixed bottom-6 left-6 z-50 flex flex-col gap-2">
       {toasts.map((t) => (
         <Toast key={t.id} toast={t} onDone={onDone} />
       ))}

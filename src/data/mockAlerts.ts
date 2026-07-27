@@ -17,7 +17,7 @@ function rec(email: string): Recipient {
   return { name: u.name, email: u.email };
 }
 
-export const initialAlerts: AlertRule[] = [
+const baseAlerts: Omit<AlertRule, 'enabled'>[] = [
   {
     id: 'ar-001',
     ruleName: 'Production Availability Drop',
@@ -278,3 +278,9 @@ export const initialAlerts: AlertRule[] = [
     frequency: 'Once per day',
   },
 ];
+
+// ar-006 (Interface Errors Rising) demonstrates a paused rule in the seed data.
+export const initialAlerts: AlertRule[] = baseAlerts.map((rule) => ({
+  ...rule,
+  enabled: rule.id !== 'ar-006',
+}));

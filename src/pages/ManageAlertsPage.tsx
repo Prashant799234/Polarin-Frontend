@@ -126,12 +126,12 @@ export default function ManageAlertsPage() {
     setFormState({ mode: 'edit', rule });
   };
 
-  const handleSave = (data: Omit<AlertRule, 'id' | 'history' | 'createdAt'>) => {
+  const handleSave = (data: Omit<AlertRule, 'id' | 'history' | 'createdAt' | 'enabled'>) => {
     if (formState?.mode === 'edit' && formState.rule) {
       setAlerts((prev) => prev.map((a) => (a.id === formState.rule!.id ? { ...a, ...data } : a)));
       push(`${data.ruleName} updated successfully`);
     } else {
-      const newRule: AlertRule = { ...data, id: nextId(alerts), history: [], createdAt: nowIso() };
+      const newRule: AlertRule = { ...data, id: nextId(alerts), history: [], createdAt: nowIso(), enabled: true };
       setAlerts((prev) => [newRule, ...prev]);
       setTab('all');
       setPage(1);
@@ -146,6 +146,30 @@ export default function ManageAlertsPage() {
     push(`${ruleToDelete.ruleName} deleted`, 'error');
     setRuleToDelete(null);
     setSelectedRule(null);
+  };
+
+  const handleDuplicate = (rule: AlertRule) => {
+    const copy: AlertRule = {
+      ...rule,
+      id: nextId(alerts),
+      ruleName: `${rule.ruleName} (Copy)`,
+      history: [],
+      createdAt: nowIso(),
+      enabled: true,
+      services: rule.services.map((s) => ({ ...s, id: `${s.name}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` })),
+    };
+    setAlerts((prev) => [copy, ...prev]);
+    setTab('all');
+    setPage(1);
+    setSelectedRule(null);
+    push(`Duplicated as "${copy.ruleName}"`);
+  };
+
+  const handleToggleEnabled = (rule: AlertRule) => {
+    const nextEnabled = !rule.enabled;
+    setAlerts((prev) => prev.map((a) => (a.id === rule.id ? { ...a, enabled: nextEnabled } : a)));
+    setSelectedRule((prev) => (prev && prev.id === rule.id ? { ...prev, enabled: nextEnabled } : prev));
+    push(`${rule.ruleName} ${nextEnabled ? 'enabled' : 'disabled'}`, nextEnabled ? 'success' : 'info');
   };
 
   const updateServices = (services: AlertRule['services']) => {
@@ -236,6 +260,7 @@ export default function ManageAlertsPage() {
                     onRowClick={setSelectedRule}
                     onEdit={openEdit}
                     onDelete={setRuleToDelete}
+                    onDuplicate={handleDuplicate}
                     sortKey={sortKey}
                     sortDir={sortDir}
                     onSortChange={handleSort}
@@ -269,6 +294,8 @@ export default function ManageAlertsPage() {
           onClose={() => setSelectedRule(null)}
           onEdit={() => openEdit(selectedRule)}
           onDelete={() => setRuleToDelete(selectedRule)}
+          onDuplicate={() => handleDuplicate(selectedRule)}
+          onToggleEnabled={() => handleToggleEnabled(selectedRule)}
           onUpdateServices={updateServices}
           onToast={push}
         />

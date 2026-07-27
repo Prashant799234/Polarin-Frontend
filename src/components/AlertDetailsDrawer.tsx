@@ -14,11 +14,22 @@ interface Props {
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onDuplicate: () => void;
+  onToggleEnabled: () => void;
   onUpdateServices: (services: AlertRule['services']) => void;
   onToast: (message: string) => void;
 }
 
-export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, onUpdateServices, onToast }: Props) {
+export default function AlertDetailsDrawer({
+  rule,
+  onClose,
+  onEdit,
+  onDelete,
+  onDuplicate,
+  onToggleEnabled,
+  onUpdateServices,
+  onToast,
+}: Props) {
   const [tab, setTab] = useState<'services' | 'history' | 'notifications'>('services');
   const [showPicker, setShowPicker] = useState(false);
   const [pickerFamily, setPickerFamily] = useState<'all' | 'VC' | 'Wave' | 'Port'>('all');
@@ -85,6 +96,11 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
               <div className="flex items-end gap-2">
                 <p className="font-inter text-xl font-extrabold text-secondary-7">{rule.ruleName}</p>
                 <SeverityBadge severity={rule.severity} />
+                {!rule.enabled && (
+                  <span className="inline-flex items-center rounded-3xl border border-secondary-3 bg-secondary-2 px-2 py-1 text-[10px] text-secondary-7">
+                    Disabled
+                  </span>
+                )}
               </div>
               <p className="text-sm text-secondary-6">{conditionText(rule)} &middot; held {rule.holdWindow}</p>
             </div>
@@ -93,9 +109,19 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
             </Button>
           </div>
 
-          <div className="flex w-full items-center gap-3">
+          <div className="flex w-full flex-wrap items-center gap-3">
             <Button variant="secondary" icon={<Icon name="edit" size={20} />} onClick={onEdit}>
               Edit Rule
+            </Button>
+            <Button variant="secondary" icon={<Icon name="content_copy" size={20} />} onClick={onDuplicate}>
+              Duplicate
+            </Button>
+            <Button
+              variant="secondary"
+              icon={<Icon name={rule.enabled ? 'pause_circle' : 'play_circle'} size={20} />}
+              onClick={onToggleEnabled}
+            >
+              {rule.enabled ? 'Disable' : 'Enable'}
             </Button>
             <Button variant="secondary" icon={<Icon name="delete" size={20} />} onClick={onDelete}>
               Delete

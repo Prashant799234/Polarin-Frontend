@@ -20,7 +20,7 @@ interface Props {
   mode: 'create' | 'edit';
   initial?: AlertRule;
   onClose: () => void;
-  onSave: (data: Omit<AlertRule, 'id' | 'history' | 'createdAt'>) => void;
+  onSave: (data: Omit<AlertRule, 'id' | 'history' | 'createdAt' | 'enabled'>) => void;
 }
 
 const fieldClass =
@@ -89,7 +89,15 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
     setSeverity(m.severity);
     setThreshold(m.defaultThreshold);
     setFamilyFilter('all');
-    if (!initial) setSelectedServices([]);
+    // Drop any selected services that don't support the newly picked metric,
+    // in create AND edit mode — otherwise a stale, incompatible service could
+    // silently ride along on save.
+    setSelectedServices((prev) =>
+      prev.filter((name) => {
+        const s = serviceCatalog.find((c) => c.name === name);
+        return s && m.products.includes(s.family);
+      }),
+    );
   };
 
   const toggleService = (name: string) => {
@@ -124,14 +132,17 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
 
   const flapAnySelected = flapEvents.switchover || flapEvents.flap || flapEvents.outage;
 
-  const canSave =
-    ruleName.trim().length > 0 &&
-    selectedServices.length > 0 &&
-    (isFlaps ? flapAnySelected : true) &&
-    (isFlaps ? !flapEvents.flap || threshold.trim().length > 0 : threshold.trim().length > 0) &&
-    (isAvailability && slaTier === 'custom' ? threshold.trim().length > 0 : true) &&
-    channels.length > 0 &&
-    (!channels.includes('Email') || recipients.length > 0);
+  const missingReasons: string[] = [];
+  if (ruleName.trim().length === 0) missingReasons.push('a rule name');
+  if (isFlaps && !flapAnySelected) missingReasons.push('at least one Flaps event');
+  if (isFlaps && flapEvents.flap && threshold.trim().length === 0) missingReasons.push('a flap count');
+  if (!isFlaps && threshold.trim().length === 0) missingReasons.push('a threshold value');
+  if (isAvailability && slaTier === 'custom' && threshold.trim().length === 0) missingReasons.push('a custom threshold');
+  if (selectedServices.length === 0) missingReasons.push('at least one service');
+  if (channels.length === 0) missingReasons.push('a notification channel');
+  if (channels.includes('Email') && recipients.length === 0) missingReasons.push('at least one recipient');
+
+  const canSave = missingReasons.length === 0;
 
   const handleSave = () => {
     if (!canSave) return;
@@ -579,18 +590,25 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
           </div>
         </div>
 
-        <div className="flex flex-none items-center justify-end gap-3 border-t border-secondary-2 px-6 py-4">
-          <Button variant="secondary" onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            icon={mode === 'create' ? <Icon name="add" size={20} className="invert" /> : undefined}
-            disabled={!canSave}
-            onClick={handleSave}
-          >
-            {mode === 'create' ? 'Create Alert' : 'Save Changes'}
-          </Button>
+        <div className="flex flex-none items-center justify-between gap-3 border-t border-secondary-2 px-6 py-4">
+          {!canSave && (
+            <p className="text-xs text-secondary-6">
+              Add {missingReasons.join(', ')} to continue.
+            </p>
+          )}
+          <div className="ml-auto flex items-center gap-3">
+            <Button variant="secondary" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              icon={mode === 'create' ? <Icon name="add" size={20} className="invert" /> : undefined}
+              disabled={!canSave}
+              onClick={handleSave}
+            >
+              {mode === 'create' ? 'Create Alert' : 'Save Changes'}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

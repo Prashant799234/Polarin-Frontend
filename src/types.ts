@@ -68,4 +68,5 @@ export interface AlertRule {
   slaTier?: SlaTier;
   flapEvents?: FlapEvents;
   switchoverLocation?: boolean;
+  enabled: boolean;
 }
