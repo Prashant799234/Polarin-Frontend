@@ -24,7 +24,7 @@ interface Props {
 export default function AlertsTable({ rules, onRowClick, onEdit, onDelete }: Props) {
   return (
     <div className="flex w-full flex-col items-start overflow-clip rounded-2xl border-[0.5px] border-secondary-2 bg-white shadow-table">
-      <div className="flex h-[54px] w-full items-stretch border-b-2 border-secondary-6 bg-secondary-1">
+      <div className="flex h-[54px] w-full items-stretch bg-secondary-1">
         {HEADERS.map((h) => (
           <div key={h.label} className="flex flex-1 items-center gap-1 px-2 py-4 first:pl-6">
             <p className="whitespace-nowrap text-sm font-semibold text-secondary-6">{h.label}</p>
