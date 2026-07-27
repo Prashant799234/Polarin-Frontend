@@ -65,45 +65,43 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
       onClick={handleClose}
     >
       <div
-        className={`flex h-full w-[800px] max-w-[95vw] flex-col items-start overflow-y-auto bg-white py-6 transition-transform duration-200 ease-out ${
+        className={`flex h-full w-[800px] max-w-[95vw] flex-col items-start gap-6 overflow-y-auto bg-white py-6 transition-transform duration-200 ease-out ${
           visible ? 'translate-x-0' : 'translate-x-full'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex w-full flex-col items-start gap-6 px-6">
-          <div className="flex w-full flex-col items-start justify-center gap-4">
-            <div className="flex w-full items-center justify-between">
-              <div className="flex flex-col items-start justify-end">
-                <div className="flex items-end gap-2">
-                  <p className="font-inter text-xl font-extrabold text-secondary-7">{rule.ruleName}</p>
-                  <SeverityBadge severity={rule.severity} />
-                </div>
-                <p className="w-[336px] text-sm text-secondary-6">
-                  {rule.aggregation} {rule.metric} {rule.comparator} {rule.threshold}
-                </p>
+        <div className="flex w-full flex-col items-start justify-center gap-4 px-6">
+          <div className="flex w-full items-center justify-between">
+            <div className="flex flex-col items-start justify-end">
+              <div className="flex items-end gap-2">
+                <p className="font-inter text-xl font-extrabold text-secondary-7">{rule.ruleName}</p>
+                <SeverityBadge severity={rule.severity} />
               </div>
-              <Button variant="secondary" icon={<img src={closeIcon} alt="" className="size-5" />} onClick={handleClose}>
-                Close
+              <p className="w-[336px] text-sm text-secondary-6">
+                {rule.aggregation} {rule.metric} {rule.comparator} {rule.threshold}
+              </p>
+            </div>
+            <Button variant="secondary" icon={<img src={closeIcon} alt="" className="size-5" />} onClick={handleClose}>
+              Close
+            </Button>
+          </div>
+
+          <div className="flex w-full items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button variant="secondary" icon={<img src={editIcon} alt="" className="size-5" />} onClick={onEdit}>
+                Edit Rule
+              </Button>
+              <Button variant="secondary" icon={<img src={deleteIcon} alt="" className="size-5" />} onClick={onDelete}>
+                Delete
               </Button>
             </div>
-
-            <div className="flex w-full items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Button variant="secondary" icon={<img src={editIcon} alt="" className="size-5" />} onClick={onEdit}>
-                  Edit Rule
-                </Button>
-                <Button variant="secondary" icon={<img src={deleteIcon} alt="" className="size-5" />} onClick={onDelete}>
-                  Delete
-                </Button>
-              </div>
-              <button
-                type="button"
-                aria-label="More options"
-                className="rounded-full p-1.5 transition-colors duration-150 hover:bg-secondary-1 active:scale-95"
-              >
-                <img src={moreVert} alt="" className="size-6" />
-              </button>
-            </div>
+            <button
+              type="button"
+              aria-label="More options"
+              className="rounded-full p-1.5 transition-colors duration-150 hover:bg-secondary-1 active:scale-95"
+            >
+              <img src={moreVert} alt="" className="size-6" />
+            </button>
           </div>
         </div>
 
@@ -130,7 +128,7 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
         </div>
 
         {tab === 'services' ? (
-          <div className="flex w-full flex-col items-start gap-4 px-6 pt-6">
+          <div className="flex w-full flex-col items-start gap-4 px-6">
             <div className="flex w-full flex-col items-start">
               <p className="font-lato text-base font-extrabold text-secondary-7">Services this alert watches</p>
               <p className="text-sm text-secondary-6">
