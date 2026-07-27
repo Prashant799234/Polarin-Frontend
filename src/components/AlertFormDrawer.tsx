@@ -5,7 +5,6 @@ import Icon from './Icon';
 import Toggle from './Toggle';
 import {
   AGGREGATIONS,
-  FREQUENCIES,
   HOLD_WINDOWS,
   NOTIFY_CHANNELS,
   PRODUCT_FAMILIES,
@@ -20,7 +19,7 @@ interface Props {
   mode: 'create' | 'edit';
   initial?: AlertRule;
   onClose: () => void;
-  onSave: (data: Omit<AlertRule, 'id' | 'history' | 'createdAt' | 'enabled'>) => void;
+  onSave: (data: Omit<AlertRule, 'id' | 'history' | 'createdAt'>) => void;
 }
 
 const fieldClass =
@@ -48,7 +47,6 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
   const [channels, setChannels] = useState<NotifyChannel[]>(initial?.channels ?? ['In-app', 'Email']);
   const [recipients, setRecipients] = useState<Recipient[]>(initial?.recipients ?? []);
   const [recipientQuery, setRecipientQuery] = useState('');
-  const [frequency, setFrequency] = useState(initial?.frequency ?? 'Real-time');
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -167,7 +165,6 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
       services,
       channels,
       recipients,
-      frequency,
       slaTier: isAvailability ? slaTier : undefined,
       flapEvents: isFlaps ? flapEvents : undefined,
       switchoverLocation: isFlaps ? switchoverLocation : undefined,
@@ -472,22 +469,27 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
 
               <div className="flex flex-col gap-1.5">
                 <label className={labelClass}>Notify by</label>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 rounded-xl border border-secondary-2 p-2">
                   {NOTIFY_CHANNELS.map((c) => {
                     const on = channels.includes(c.key);
                     return (
-                      <button
+                      <label
                         key={c.key}
-                        type="button"
-                        onClick={() => toggleChannel(c.key)}
-                        className={`rounded-full border px-4 py-1.5 text-sm font-bold transition-all duration-150 active:scale-95 ${
-                          on
-                            ? 'border-primary-5 bg-primary-5 text-secondary-1'
-                            : 'border-secondary-3 bg-white text-secondary-7 hover:border-secondary-4 hover:bg-secondary-1'
+                        className={`flex cursor-pointer items-start gap-3 rounded-lg px-3 py-2 transition-colors duration-150 ${
+                          on ? 'bg-primary-2' : 'hover:bg-secondary-1'
                         }`}
                       >
-                        {c.label}
-                      </button>
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          onChange={() => toggleChannel(c.key)}
+                          className="mt-0.5 accent-primary-4"
+                        />
+                        <span>
+                          <span className="block text-sm font-bold text-secondary-7">{c.label}</span>
+                          <span className="block text-xs text-secondary-6">{c.detail}</span>
+                        </span>
+                      </label>
                     );
                   })}
                 </div>
@@ -573,19 +575,6 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
                   )}
                 </div>
               )}
-
-              <div className="flex flex-col gap-1.5">
-                <label className={labelClass}>Frequency</label>
-                <select
-                  value={frequency}
-                  onChange={(e) => setFrequency(e.target.value)}
-                  className={`${fieldClass} w-[220px] cursor-pointer`}
-                >
-                  {FREQUENCIES.map((f) => (
-                    <option key={f}>{f}</option>
-                  ))}
-                </select>
-              </div>
             </div>
           </div>
         </div>

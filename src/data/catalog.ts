@@ -145,8 +145,6 @@ export const PRODUCT_FAMILIES: { key: 'all' | 'VC' | 'Wave' | 'Port'; label: str
   { key: 'Port', label: 'Port' },
 ];
 
-export const FREQUENCIES = ['Real-time', 'Once per day', 'Digest'];
-
 export const NOTIFY_CHANNELS: { key: 'In-app' | 'Email'; label: string; detail: string }[] = [
   { key: 'In-app', label: 'In-app', detail: 'Appears on your Dashboard, the Service page, and the notification bell.' },
   { key: 'Email', label: 'Email', detail: 'Sent to the recipients you choose below.' },

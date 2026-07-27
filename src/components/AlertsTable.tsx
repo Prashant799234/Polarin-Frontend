@@ -92,7 +92,6 @@ interface Props {
   onRowClick: (rule: AlertRule) => void;
   onEdit: (rule: AlertRule) => void;
   onDelete: (rule: AlertRule) => void;
-  onDuplicate: (rule: AlertRule) => void;
   sortKey: SortKey;
   sortDir: SortDir;
   onSortChange: (key: SortKey) => void;
@@ -130,7 +129,6 @@ export default function AlertsTable({
   onRowClick,
   onEdit,
   onDelete,
-  onDuplicate,
   sortKey,
   sortDir,
   onSortChange,
@@ -174,7 +172,7 @@ export default function AlertsTable({
           <p className="whitespace-nowrap text-sm font-semibold text-secondary-6">Timestamp</p>
           <SortIcon active={sortKey === 'timestamp'} dir={sortDir} onClick={() => onSortChange('timestamp')} label="Timestamp" />
         </div>
-        <div className="flex w-[132px] shrink-0 items-center justify-end gap-1 px-2 pl-2 pr-6 py-4">
+        <div className="flex w-[88px] shrink-0 items-center justify-end gap-1 px-2 pl-2 pr-6 py-4">
           <p className="whitespace-nowrap text-sm font-semibold text-secondary-6">Actions</p>
         </div>
       </div>
@@ -183,20 +181,11 @@ export default function AlertsTable({
         <div
           key={rule.id}
           onClick={() => onRowClick(rule)}
-          className={`flex w-full cursor-pointer items-start border-b border-secondary-2 transition-colors duration-150 last:border-b-0 hover:bg-secondary-1 active:bg-secondary-2/60 ${
-            rule.enabled ? '' : 'opacity-60'
-          }`}
+          className="flex w-full cursor-pointer items-start border-b border-secondary-2 transition-colors duration-150 last:border-b-0 hover:bg-secondary-1 active:bg-secondary-2/60"
         >
           <div className="flex flex-1 flex-col gap-1 self-stretch overflow-clip py-4 pl-6 pr-2">
             <p className="truncate text-sm font-bold text-secondary-7">{rule.ruleName}</p>
-            <div className="flex flex-wrap items-center gap-1">
-              <SeverityBadge severity={rule.severity} className="w-fit" />
-              {!rule.enabled && (
-                <span className="inline-flex w-fit items-center rounded-3xl border border-secondary-3 bg-secondary-2 px-2 py-1 text-[10px] text-secondary-7">
-                  Disabled
-                </span>
-              )}
-            </div>
+            <SeverityBadge severity={rule.severity} className="w-fit" />
           </div>
           <div className="flex flex-1 flex-col items-start justify-center self-stretch overflow-clip px-2 py-4">
             <div className="flex items-center gap-1 whitespace-nowrap">
@@ -215,7 +204,7 @@ export default function AlertsTable({
           <div className="flex flex-1 flex-col items-start justify-center self-stretch overflow-clip px-2 py-4">
             <p className="w-full text-sm text-secondary-7">{formatDateTime(latestTimestamp(rule))}</p>
           </div>
-          <div className="flex h-[76px] w-[132px] shrink-0 items-center justify-end gap-1 py-3.5 pl-2 pr-6">
+          <div className="flex h-[76px] w-[88px] shrink-0 items-center justify-end gap-1 py-3.5 pl-2 pr-6">
             <Tooltip label="Edit rule">
               <button
                 type="button"
@@ -227,19 +216,6 @@ export default function AlertsTable({
                 className="flex items-center justify-center rounded-full p-1.5 transition-all duration-150 hover:bg-secondary-2 active:scale-90"
               >
                 <Icon name="edit" size={18} className="text-secondary-7" />
-              </button>
-            </Tooltip>
-            <Tooltip label="Duplicate rule">
-              <button
-                type="button"
-                aria-label="Duplicate rule"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDuplicate(rule);
-                }}
-                className="flex items-center justify-center rounded-full p-1.5 transition-all duration-150 hover:bg-secondary-2 active:scale-90"
-              >
-                <Icon name="content_copy" size={18} className="text-secondary-7" />
               </button>
             </Tooltip>
             <Tooltip label="Delete rule">

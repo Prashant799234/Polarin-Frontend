@@ -64,9 +64,7 @@ export interface AlertRule {
   createdAt: string;
   channels: NotifyChannel[];
   recipients: Recipient[];
-  frequency: string;
   slaTier?: SlaTier;
   flapEvents?: FlapEvents;
   switchoverLocation?: boolean;
-  enabled: boolean;
 }

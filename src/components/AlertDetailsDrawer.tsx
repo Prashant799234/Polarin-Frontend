@@ -14,25 +14,15 @@ interface Props {
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  onDuplicate: () => void;
-  onToggleEnabled: () => void;
   onUpdateServices: (services: AlertRule['services']) => void;
   onToast: (message: string) => void;
 }
 
-export default function AlertDetailsDrawer({
-  rule,
-  onClose,
-  onEdit,
-  onDelete,
-  onDuplicate,
-  onToggleEnabled,
-  onUpdateServices,
-  onToast,
-}: Props) {
+export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, onUpdateServices, onToast }: Props) {
   const [tab, setTab] = useState<'services' | 'history' | 'notifications'>('services');
   const [showPicker, setShowPicker] = useState(false);
   const [pickerFamily, setPickerFamily] = useState<'all' | 'VC' | 'Wave' | 'Port'>('all');
+  const [pickerQuery, setPickerQuery] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [serviceToRemove, setServiceToRemove] = useState<AlertService | null>(null);
   const [historyFilter, setHistoryFilter] = useState('all');
@@ -54,6 +44,7 @@ export default function AlertDetailsDrawer({
     (c) =>
       ruleMetric.products.includes(c.family) &&
       (pickerFamily === 'all' || c.family === pickerFamily) &&
+      (pickerQuery.trim() === '' || c.name.toLowerCase().includes(pickerQuery.trim().toLowerCase())) &&
       !rule.services.some((s) => s.name === c.name),
   );
 
@@ -70,7 +61,7 @@ export default function AlertDetailsDrawer({
       { id: `${catalogItem.name}-${Date.now()}`, name: catalogItem.name, family: catalogItem.family, capacity: catalogItem.capacity },
     ]);
     onToast(`${catalogItem.name} added to ${rule.ruleName}`);
-    setShowPicker(false);
+    setPickerQuery('');
   };
 
   const historyRows = rule.history
@@ -96,11 +87,6 @@ export default function AlertDetailsDrawer({
               <div className="flex items-end gap-2">
                 <p className="font-inter text-xl font-extrabold text-secondary-7">{rule.ruleName}</p>
                 <SeverityBadge severity={rule.severity} />
-                {!rule.enabled && (
-                  <span className="inline-flex items-center rounded-3xl border border-secondary-3 bg-secondary-2 px-2 py-1 text-[10px] text-secondary-7">
-                    Disabled
-                  </span>
-                )}
               </div>
               <p className="text-sm text-secondary-6">{conditionText(rule)} &middot; held {rule.holdWindow}</p>
             </div>
@@ -109,19 +95,9 @@ export default function AlertDetailsDrawer({
             </Button>
           </div>
 
-          <div className="flex w-full flex-wrap items-center gap-3">
+          <div className="flex w-full items-center gap-3">
             <Button variant="secondary" icon={<Icon name="edit" size={20} />} onClick={onEdit}>
               Edit Rule
-            </Button>
-            <Button variant="secondary" icon={<Icon name="content_copy" size={20} />} onClick={onDuplicate}>
-              Duplicate
-            </Button>
-            <Button
-              variant="secondary"
-              icon={<Icon name={rule.enabled ? 'pause_circle' : 'play_circle'} size={20} />}
-              onClick={onToggleEnabled}
-            >
-              {rule.enabled ? 'Disable' : 'Enable'}
             </Button>
             <Button variant="secondary" icon={<Icon name="delete" size={20} />} onClick={onDelete}>
               Delete
@@ -154,23 +130,36 @@ export default function AlertDetailsDrawer({
         <div className="flex-1 overflow-y-auto px-6 pb-6 pt-6">
           {tab === 'services' ? (
             <div className="flex w-full flex-col items-start gap-4">
-              <div className="flex w-full flex-col items-start">
-                <p className="font-lato text-base font-extrabold text-secondary-7">Services this alert watches</p>
-                <p className="text-sm text-secondary-6">
-                  A service can have at most one active alert at a time. Click a service to see its current alert,
-                  if any.
-                </p>
-              </div>
-
-              <div className="flex w-full items-center justify-end">
-                <div className="relative">
-                  <Button variant="secondary" icon={<Icon name="add" size={20} />} onClick={() => setShowPicker((v) => !v)}>
+              <div className="flex w-full items-start justify-between gap-4">
+                <div className="flex flex-col items-start">
+                  <p className="font-lato text-base font-extrabold text-secondary-7">Services this alert watches</p>
+                  <p className="text-sm text-secondary-6">
+                    A service can have at most one active alert at a time. Click a service to see its current
+                    alert, if any.
+                  </p>
+                </div>
+                <div className="relative shrink-0">
+                  <Button
+                    variant="secondary"
+                    icon={<Icon name="add" size={20} />}
+                    onClick={() => setShowPicker((v) => !v)}
+                  >
                     Add Services
                   </Button>
                   {showPicker && (
-                    <div className="absolute right-0 z-10 mt-2 max-h-80 w-72 origin-top-right animate-[dropdown-in_150ms_ease-out] overflow-y-auto rounded-xl border border-secondary-3 bg-white p-2 shadow-card">
+                    <div className="absolute right-0 z-10 mt-2 w-80 origin-top-right animate-[dropdown-in_150ms_ease-out] rounded-xl border border-secondary-3 bg-white p-2 shadow-card">
+                      <div className="flex items-center gap-2 rounded-lg border border-secondary-3 px-3 py-1.5 transition-colors duration-150 focus-within:border-primary-4">
+                        <Icon name="search" size={16} className="text-secondary-6" />
+                        <input
+                          autoFocus
+                          value={pickerQuery}
+                          onChange={(e) => setPickerQuery(e.target.value)}
+                          placeholder="Search services…"
+                          className="w-full bg-transparent text-sm text-secondary-7 outline-none placeholder:text-secondary-6"
+                        />
+                      </div>
                       {pickerFamilies.length > 2 && (
-                        <div className="flex flex-wrap gap-1.5 border-b border-secondary-2 p-1 pb-2">
+                        <div className="flex flex-wrap gap-1.5 border-b border-secondary-2 p-1 pb-2 pt-2">
                           {pickerFamilies.map((f) => {
                             const on = pickerFamily === f.key;
                             return (
@@ -188,21 +177,25 @@ export default function AlertDetailsDrawer({
                           })}
                         </div>
                       )}
-                      {availableToAdd.length === 0 ? (
-                        <p className="p-2 text-xs text-secondary-6">All catalog services already added.</p>
-                      ) : (
-                        availableToAdd.map((item) => (
-                          <button
-                            key={item.name}
-                            type="button"
-                            onClick={() => addService(item)}
-                            className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors duration-150 hover:bg-secondary-1 active:scale-[0.98]"
-                          >
-                            <span className="font-bold text-secondary-7">{item.name}</span>
-                            <span className="text-xs text-secondary-6">{item.capacity}</span>
-                          </button>
-                        ))
-                      )}
+                      <div className="max-h-64 overflow-y-auto pt-1">
+                        {availableToAdd.length === 0 ? (
+                          <p className="p-2 text-xs text-secondary-6">
+                            {pickerQuery.trim() ? 'No services match your search.' : 'All catalog services already added.'}
+                          </p>
+                        ) : (
+                          availableToAdd.map((item) => (
+                            <button
+                              key={item.name}
+                              type="button"
+                              onClick={() => addService(item)}
+                              className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors duration-150 hover:bg-secondary-1 active:scale-[0.98]"
+                            >
+                              <span className="font-bold text-secondary-7">{item.name}</span>
+                              <span className="font-mono text-[10px] text-secondary-6">{item.capacity}</span>
+                            </button>
+                          ))
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -212,6 +205,7 @@ export default function AlertDetailsDrawer({
                 {rule.services.map((service) => {
                   const activeEntry = activeEntryForService(rule, service.name);
                   const open = expanded === service.name;
+                  const isOnlyService = rule.services.length === 1;
                   return (
                     <div key={service.id} className="w-full rounded-2xl border border-secondary-2 transition-colors duration-150 hover:border-secondary-4">
                       <button
@@ -240,15 +234,22 @@ export default function AlertDetailsDrawer({
                             {service.capacity}
                           </span>
                         </div>
-                        <Tooltip label={`Remove ${service.name}`}>
+                        <Tooltip label={isOnlyService ? "Can't remove the last service" : `Remove ${service.name}`}>
                           <span
                             role="button"
-                            aria-label={`Remove ${service.name}`}
+                            aria-label={isOnlyService ? undefined : `Remove ${service.name}`}
+                            aria-disabled={isOnlyService}
                             onClick={(e) => {
                               e.stopPropagation();
+                              if (isOnlyService) {
+                                onToast("An alert needs at least one service — delete the rule instead");
+                                return;
+                              }
                               setServiceToRemove(service);
                             }}
-                            className="flex items-center gap-1 rounded-xl border border-secondary-3 bg-white p-2 transition-all duration-150 hover:border-red-3 hover:bg-red-2 active:scale-95"
+                            className={`flex items-center gap-1 rounded-xl border border-secondary-3 bg-white p-2 transition-all duration-150 ${
+                              isOnlyService ? 'cursor-not-allowed opacity-40' : 'hover:border-red-3 hover:bg-red-2 active:scale-95'
+                            }`}
                           >
                             <Icon name="delete" size={16} />
                           </span>
@@ -358,27 +359,31 @@ export default function AlertDetailsDrawer({
                 </p>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <p className={`text-sm font-bold text-secondary-7`}>Notify by</p>
-                <div className="flex flex-wrap gap-2">
+              <div className="flex w-full flex-col gap-2 rounded-2xl border border-secondary-2 p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-secondary-6">Notify by</p>
+                <div className="flex flex-col gap-2">
                   {NOTIFY_CHANNELS.map((c) => {
                     const on = rule.channels.includes(c.key);
                     return (
-                      <span
-                        key={c.key}
-                        className={`rounded-full border px-3 py-1.5 text-sm font-bold ${
-                          on ? 'border-primary-5 bg-primary-5 text-secondary-1' : 'border-secondary-3 bg-white text-secondary-5'
-                        }`}
-                      >
-                        {c.label}
-                      </span>
+                      <div key={c.key} className="flex items-center gap-3">
+                        <Icon
+                          name={on ? 'check_circle' : 'radio_button_unchecked'}
+                          size={20}
+                          className={on ? 'text-primary-5' : 'text-secondary-4'}
+                          filled={on}
+                        />
+                        <div>
+                          <p className={`text-sm font-bold ${on ? 'text-secondary-7' : 'text-secondary-5'}`}>{c.label}</p>
+                          {on && <p className="text-xs text-secondary-6">{c.detail}</p>}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
               </div>
 
               {rule.channels.includes('Email') && (
-                <div className="flex flex-col gap-1.5">
+                <div className="flex w-full flex-col gap-2">
                   <p className="text-sm font-bold text-secondary-7">Recipients</p>
                   {rule.recipients.length === 0 ? (
                     <p className="text-sm text-secondary-6">No recipients configured.</p>
@@ -402,13 +407,6 @@ export default function AlertDetailsDrawer({
                   )}
                 </div>
               )}
-
-              <div className="flex flex-col gap-1.5">
-                <p className="text-sm font-bold text-secondary-7">Frequency</p>
-                <span className="w-fit rounded-full border border-secondary-3 bg-secondary-1 px-3 py-1.5 text-sm font-bold text-secondary-7">
-                  {rule.frequency}
-                </span>
-              </div>
             </div>
           )}
         </div>
