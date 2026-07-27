@@ -122,18 +122,18 @@ export const AGGREGATIONS = ['AVG', 'MAX', 'MIN', 'SUM', 'COUNT'];
 export const HOLD_WINDOWS = ['15 min', '30 min', '45 min', '60 min'];
 
 export const serviceCatalog: CatalogService[] = [
-  { name: 'VC-Bangalore-01', family: 'VC', capacity: '10 Gbps' },
-  { name: 'VC-Bangalore-02', family: 'VC', capacity: '10 Gbps' },
-  { name: 'VC-Mumbai-01', family: 'VC', capacity: '10 Gbps' },
-  { name: 'VC-Mumbai-02', family: 'VC', capacity: '40 Gbps' },
-  { name: 'VC-Chennai-01', family: 'VC', capacity: '10 Gbps' },
-  { name: 'VC-Delhi-01', family: 'VC', capacity: '10 Gbps' },
-  { name: 'VC-Singapore-01', family: 'VC', capacity: '100 Gbps' },
-  { name: 'Wave-BLR-MUM', family: 'Wave', capacity: '100 Gbps' },
-  { name: 'Wave-DEL-HYD', family: 'Wave', capacity: '400 Gbps' },
-  { name: 'Wave-CHN-SIN', family: 'Wave', capacity: '10 Gbps' },
-  { name: 'Port-MUM-MB1-A', family: 'Port', capacity: '10 Gbps' },
-  { name: 'Port-PUN-03', family: 'Port', capacity: '1 Gbps' },
+  { name: 'VC-Bangalore-01', family: 'VC', capacity: '10 Gbps', location: 'Bangalore' },
+  { name: 'VC-Bangalore-02', family: 'VC', capacity: '10 Gbps', location: 'Bangalore' },
+  { name: 'VC-Mumbai-01', family: 'VC', capacity: '10 Gbps', location: 'Mumbai' },
+  { name: 'VC-Mumbai-02', family: 'VC', capacity: '40 Gbps', location: 'Mumbai' },
+  { name: 'VC-Chennai-01', family: 'VC', capacity: '10 Gbps', location: 'Chennai' },
+  { name: 'VC-Delhi-01', family: 'VC', capacity: '10 Gbps', location: 'Delhi' },
+  { name: 'VC-Singapore-01', family: 'VC', capacity: '100 Gbps', location: 'Singapore' },
+  { name: 'Wave-BLR-MUM', family: 'Wave', capacity: '100 Gbps', location: 'Bangalore ↔ Mumbai' },
+  { name: 'Wave-DEL-HYD', family: 'Wave', capacity: '400 Gbps', location: 'Delhi ↔ Hyderabad' },
+  { name: 'Wave-CHN-SIN', family: 'Wave', capacity: '10 Gbps', location: 'Chennai ↔ Singapore' },
+  { name: 'Port-MUM-MB1-A', family: 'Port', capacity: '10 Gbps', location: 'Mumbai · MB1-A' },
+  { name: 'Port-PUN-03', family: 'Port', capacity: '1 Gbps', location: 'Pune' },
 ];
 
 export const catalogServiceByName = (name: string) => serviceCatalog.find((s) => s.name === name);
@@ -178,9 +178,20 @@ export interface DirectoryUser {
   name: string;
   email: string;
   role: string;
+  isSelf?: boolean;
 }
 
+// The signed-in user shown in the header — kept in the directory so they can be
+// found like anyone else, and so new alert rules can pre-fill them as a recipient.
+export const CURRENT_USER: DirectoryUser = {
+  name: 'Abram Qureshi',
+  email: 'abram.qureshi@example.com',
+  role: 'Admin',
+  isSelf: true,
+};
+
 export const userDirectory: DirectoryUser[] = [
+  CURRENT_USER,
   { name: 'Alex Morgan', email: 'alex.morgan@example.com', role: 'System Admin' },
   { name: 'Jordan Lee', email: 'jordan.lee@example.com', role: 'Network Admin' },
   { name: 'Ops Desk', email: 'ops-desk@example.com', role: 'Network Admin' },

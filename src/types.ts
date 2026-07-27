@@ -20,6 +20,7 @@ export interface CatalogService {
   name: string;
   family: ProductFamily;
   capacity: string;
+  location: string;
 }
 
 export interface AlertService {

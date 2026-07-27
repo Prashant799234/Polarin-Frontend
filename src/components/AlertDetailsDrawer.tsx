@@ -5,7 +5,7 @@ import Button from './Button';
 import ConfirmModal from './ConfirmModal';
 import Icon from './Icon';
 import Tooltip from './Tooltip';
-import { NOTIFY_CHANNELS, PRODUCT_FAMILIES, metricByKey, serviceCatalog } from '../data/catalog';
+import { NOTIFY_CHANNELS } from '../data/catalog';
 import { activeEntryForService, conditionText, entriesForService } from '../utils/rules';
 import { formatDateTime, formatDuration } from '../utils/dates';
 
@@ -20,9 +20,6 @@ interface Props {
 
 export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, onUpdateServices, onToast }: Props) {
   const [tab, setTab] = useState<'services' | 'history' | 'notifications'>('services');
-  const [showPicker, setShowPicker] = useState(false);
-  const [pickerFamily, setPickerFamily] = useState<'all' | 'VC' | 'Wave' | 'Port'>('all');
-  const [pickerQuery, setPickerQuery] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [serviceToRemove, setServiceToRemove] = useState<AlertService | null>(null);
   const [historyFilter, setHistoryFilter] = useState('all');
@@ -38,30 +35,11 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
     window.setTimeout(onClose, 200);
   };
 
-  const ruleMetric = metricByKey(rule.metricKey);
-  const pickerFamilies = PRODUCT_FAMILIES.filter((f) => f.key === 'all' || ruleMetric.products.includes(f.key));
-  const availableToAdd = serviceCatalog.filter(
-    (c) =>
-      ruleMetric.products.includes(c.family) &&
-      (pickerFamily === 'all' || c.family === pickerFamily) &&
-      (pickerQuery.trim() === '' || c.name.toLowerCase().includes(pickerQuery.trim().toLowerCase())) &&
-      !rule.services.some((s) => s.name === c.name),
-  );
-
   const confirmRemoveService = () => {
     if (!serviceToRemove) return;
     onUpdateServices(rule.services.filter((s) => s.id !== serviceToRemove.id));
     onToast(`${serviceToRemove.name} removed from ${rule.ruleName}`);
     setServiceToRemove(null);
-  };
-
-  const addService = (catalogItem: (typeof serviceCatalog)[number]) => {
-    onUpdateServices([
-      ...rule.services,
-      { id: `${catalogItem.name}-${Date.now()}`, name: catalogItem.name, family: catalogItem.family, capacity: catalogItem.capacity },
-    ]);
-    onToast(`${catalogItem.name} added to ${rule.ruleName}`);
-    setPickerQuery('');
   };
 
   const historyRows = rule.history
@@ -130,75 +108,12 @@ export default function AlertDetailsDrawer({ rule, onClose, onEdit, onDelete, on
         <div className="flex-1 overflow-y-auto px-6 pb-6 pt-6">
           {tab === 'services' ? (
             <div className="flex w-full flex-col items-start gap-4">
-              <div className="flex w-full items-start justify-between gap-4">
-                <div className="flex flex-col items-start">
-                  <p className="font-lato text-base font-extrabold text-secondary-7">Services this alert watches</p>
-                  <p className="text-sm text-secondary-6">
-                    A service can have at most one active alert at a time. Click a service to see its current
-                    alert, if any.
-                  </p>
-                </div>
-                <div className="relative shrink-0">
-                  <Button
-                    variant="secondary"
-                    icon={<Icon name="add" size={20} />}
-                    onClick={() => setShowPicker((v) => !v)}
-                  >
-                    Add Services
-                  </Button>
-                  {showPicker && (
-                    <div className="absolute right-0 z-10 mt-2 w-80 origin-top-right animate-[dropdown-in_150ms_ease-out] rounded-xl border border-secondary-3 bg-white p-2 shadow-card">
-                      <div className="flex items-center gap-2 rounded-lg border border-secondary-3 px-3 py-1.5 transition-colors duration-150 focus-within:border-primary-4">
-                        <Icon name="search" size={16} className="text-secondary-6" />
-                        <input
-                          autoFocus
-                          value={pickerQuery}
-                          onChange={(e) => setPickerQuery(e.target.value)}
-                          placeholder="Search services…"
-                          className="w-full bg-transparent text-sm text-secondary-7 outline-none placeholder:text-secondary-6"
-                        />
-                      </div>
-                      {pickerFamilies.length > 2 && (
-                        <div className="flex flex-wrap gap-1.5 border-b border-secondary-2 p-1 pb-2 pt-2">
-                          {pickerFamilies.map((f) => {
-                            const on = pickerFamily === f.key;
-                            return (
-                              <button
-                                key={f.key}
-                                type="button"
-                                onClick={() => setPickerFamily(f.key)}
-                                className={`rounded-full border px-2.5 py-1 text-xs font-bold transition-colors duration-150 ${
-                                  on ? 'border-primary-5 bg-primary-5 text-secondary-1' : 'border-secondary-3 bg-white text-secondary-7 hover:bg-secondary-1'
-                                }`}
-                              >
-                                {f.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                      <div className="max-h-64 overflow-y-auto pt-1">
-                        {availableToAdd.length === 0 ? (
-                          <p className="p-2 text-xs text-secondary-6">
-                            {pickerQuery.trim() ? 'No services match your search.' : 'All catalog services already added.'}
-                          </p>
-                        ) : (
-                          availableToAdd.map((item) => (
-                            <button
-                              key={item.name}
-                              type="button"
-                              onClick={() => addService(item)}
-                              className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors duration-150 hover:bg-secondary-1 active:scale-[0.98]"
-                            >
-                              <span className="font-bold text-secondary-7">{item.name}</span>
-                              <span className="font-mono text-[10px] text-secondary-6">{item.capacity}</span>
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
+              <div className="flex flex-col items-start">
+                <p className="font-lato text-base font-extrabold text-secondary-7">Services this alert watches</p>
+                <p className="text-sm text-secondary-6">
+                  A service can have at most one active alert at a time. Click a service to see its current alert,
+                  if any. Use Edit Rule above to add more services.
+                </p>
               </div>
 
               <div className="flex w-full flex-col gap-2">

@@ -5,6 +5,7 @@ import Icon from './Icon';
 import Toggle from './Toggle';
 import {
   AGGREGATIONS,
+  CURRENT_USER,
   HOLD_WINDOWS,
   NOTIFY_CHANNELS,
   PRODUCT_FAMILIES,
@@ -46,7 +47,9 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
   const servicePickerRef = useRef<HTMLDivElement>(null);
   const [emailOn, setEmailOn] = useState(initial?.channels.includes('Email') ?? false);
   const channels: NotifyChannel[] = emailOn ? ['In-app', 'Email'] : ['In-app'];
-  const [recipients, setRecipients] = useState<Recipient[]>(initial?.recipients ?? []);
+  const [recipients, setRecipients] = useState<Recipient[]>(
+    initial?.recipients ?? [{ email: CURRENT_USER.email, name: CURRENT_USER.name }],
+  );
   const [recipientQuery, setRecipientQuery] = useState('');
   const [visible, setVisible] = useState(false);
 
@@ -436,20 +439,28 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
                         return (
                           <label
                             key={service.name}
-                            className={`flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 transition-colors duration-150 ${
+                            className={`flex cursor-pointer items-start gap-2 rounded-lg px-3 py-2 transition-colors duration-150 ${
                               checked ? 'bg-primary-2' : 'hover:bg-secondary-1'
                             }`}
                           >
-                            <span className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() => toggleService(service.name)}
-                                className="accent-primary-4"
-                              />
-                              <span className="text-sm font-bold text-secondary-7">{service.name}</span>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleService(service.name)}
+                              className="mt-0.5 accent-primary-4"
+                            />
+                            <span className="flex flex-1 items-center justify-between gap-2">
+                              <span>
+                                <span className="block text-sm font-bold text-secondary-7">{service.name}</span>
+                                <span className="flex items-center gap-1.5 text-[11px] text-secondary-6">
+                                  <span className="rounded border border-secondary-3 px-1 py-0.5 font-mono text-[9px] font-bold text-secondary-6">
+                                    {service.family}
+                                  </span>
+                                  {service.location}
+                                </span>
+                              </span>
+                              <span className="whitespace-nowrap font-mono text-[10px] text-secondary-6">{service.capacity}</span>
                             </span>
-                            <span className="font-mono text-[10px] text-secondary-6">{service.capacity}</span>
                           </label>
                         );
                       })
@@ -466,21 +477,29 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
               <div className="flex flex-col gap-1.5">
                 <label className={labelClass}>Notify by</label>
                 <div className="flex flex-col gap-2 rounded-xl border border-secondary-2 p-2">
-                  <div className="flex items-start gap-3 rounded-lg bg-primary-2 px-3 py-2">
-                    <Icon name="check_circle" size={20} className="mt-0.5 flex-none text-primary-5" />
-                    <span>
-                      <span className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-secondary-7">In-app</span>
-                        <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-6">
-                          Always on
+                  <div className="flex items-start justify-between gap-3 rounded-lg bg-primary-2 px-3 py-3">
+                    <div className="flex items-start gap-3">
+                      <Icon name="notifications_active" size={20} filled className="mt-0.5 flex-none text-primary-5" />
+                      <div>
+                        <span className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-secondary-7">In-app</span>
+                          <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-6">
+                            Always on
+                          </span>
                         </span>
-                      </span>
-                      <span className="block text-xs text-secondary-6">
-                        You&apos;ll get in-app notifications the moment the alert fires — on your Dashboard, on the
-                        affected Service page, and in the notification bell at the top of the screen. This can&apos;t
-                        be turned off.
-                      </span>
-                    </span>
+                        <p className="mt-0.5 text-xs text-secondary-6">
+                          Every alert notifies in-app automatically — it shows up on your Dashboard, on the affected
+                          Service page, and in the notification bell at the top of the screen. Included with every
+                          rule and can&apos;t be turned off.
+                        </p>
+                      </div>
+                    </div>
+                    <div
+                      title="Always on — can't be turned off"
+                      className="pointer-events-none flex-none cursor-not-allowed pt-0.5 opacity-80"
+                    >
+                      <Toggle on onToggle={() => {}} size="sm" label="In-app notifications (always on)" />
+                    </div>
                   </div>
 
                   <label
@@ -522,6 +541,9 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
                         }`}
                       >
                         {r.name ?? r.email}
+                        {r.email === CURRENT_USER.email && (
+                          <span className="rounded bg-primary-2 px-1.5 py-0.5 text-[9px] font-bold text-primary-6">You</span>
+                        )}
                         {r.invited && (
                           <span className="rounded bg-orange-5 px-1.5 py-0.5 text-[9px] font-bold text-white">Invite pending</span>
                         )}
