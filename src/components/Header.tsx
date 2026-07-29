@@ -1,10 +1,24 @@
+import { useState } from 'react';
+import type { AlertRule } from '../types';
+import type { ToastTone } from '../hooks/useToasts';
 import logo from '../assets/brand/polarin-logo.png';
 import userAvatar from '../assets/brand/user-avatar.png';
 import Icon from './Icon';
+import NotificationCenter from './NotificationCenter';
+import { alertNotificationItems } from '../utils/rules';
 
 const NAV_ITEMS = ['Dashboard', 'Services', 'Settings', 'Help'];
 
-export default function Header() {
+interface Props {
+  alerts: AlertRule[];
+  onViewAlert: (rule: AlertRule) => void;
+  onToast: (message: string, tone?: ToastTone) => void;
+}
+
+export default function Header({ alerts, onViewAlert, onToast }: Props) {
+  const [showNotifications, setShowNotifications] = useState(false);
+  const { active } = alertNotificationItems(alerts);
+
   return (
     <header className="flex h-16 w-full items-center justify-between border-b-[0.5px] border-secondary-3 bg-white px-6">
       <div className="flex flex-1 items-center py-4">
@@ -39,9 +53,13 @@ export default function Header() {
         <button
           type="button"
           aria-label="Notifications"
-          className="flex size-8 items-center justify-center rounded-full border-[0.5px] border-secondary-2 bg-secondary-1 transition-colors duration-150 hover:bg-secondary-2 active:scale-90"
+          onClick={() => setShowNotifications(true)}
+          className="relative flex size-8 items-center justify-center rounded-full border-[0.5px] border-secondary-2 bg-secondary-1 transition-colors duration-150 hover:bg-secondary-2 active:scale-90"
         >
           <Icon name="notifications" size={20} className="text-secondary-7" />
+          {active.length > 0 && (
+            <span className="absolute right-1 top-1 size-2 rounded-full border border-white bg-red-4" />
+          )}
         </button>
         <div className="flex items-center gap-2">
           <div className="size-8 overflow-hidden rounded-full border-[0.5px] border-secondary-2">
@@ -53,6 +71,15 @@ export default function Header() {
           </div>
         </div>
       </div>
+
+      {showNotifications && (
+        <NotificationCenter
+          alerts={alerts}
+          onViewAlert={onViewAlert}
+          onToast={onToast}
+          onClose={() => setShowNotifications(false)}
+        />
+      )}
     </header>
   );
 }

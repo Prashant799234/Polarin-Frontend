@@ -148,7 +148,7 @@ export default function ManageAlertsPage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-secondary-1">
-      <Header />
+      <Header alerts={alerts} onViewAlert={setSelectedRule} onToast={push} />
       <div className="flex flex-1 items-start justify-between">
         <Sidebar />
         <div className="flex flex-1 items-start p-4 pt-4">

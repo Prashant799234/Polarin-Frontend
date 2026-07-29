@@ -85,6 +85,7 @@ export const initialAlerts: AlertRule[] = [
     holdWindow: '15 min',
     services: [svc('VC-Chennai-01')],
     history: [
+      h({ service: 'VC-Chennai-01', status: 'active', observed: '52 ms', raisedAt: '2026-07-28T07:20:00' }),
       h({
         service: 'VC-Chennai-01',
         status: 'resolved',
@@ -108,6 +109,7 @@ export const initialAlerts: AlertRule[] = [
     holdWindow: '15 min',
     services: [svc('VC-Delhi-01'), svc('VC-Singapore-01')],
     history: [
+      h({ service: 'VC-Singapore-01', status: 'active', observed: '10.2 ms', raisedAt: '2026-07-28T05:45:00' }),
       h({
         service: 'VC-Delhi-01',
         status: 'resolved',
@@ -131,6 +133,7 @@ export const initialAlerts: AlertRule[] = [
     holdWindow: '15 min',
     services: [svc('Wave-DEL-HYD')],
     history: [
+      h({ service: 'Wave-DEL-HYD', status: 'active', observed: '-10.1 dBm', raisedAt: '2026-07-28T08:52:00' }),
       h({
         service: 'Wave-DEL-HYD',
         status: 'resolved',
@@ -154,6 +157,7 @@ export const initialAlerts: AlertRule[] = [
     holdWindow: '30 min',
     services: [svc('Port-PUN-03')],
     history: [
+      h({ service: 'Port-PUN-03', status: 'active', observed: '340', raisedAt: '2026-07-28T09:00:00' }),
       h({
         service: 'Port-PUN-03',
         status: 'resolved',
@@ -177,6 +181,7 @@ export const initialAlerts: AlertRule[] = [
     holdWindow: '15 min',
     services: [svc('VC-Bangalore-02'), svc('Wave-BLR-MUM'), svc('Wave-CHN-SIN')],
     history: [
+      h({ service: 'Wave-CHN-SIN', status: 'active', observed: '2.8%', raisedAt: '2026-07-28T10:11:00' }),
       h({
         service: 'VC-Bangalore-02',
         status: 'resolved',
@@ -207,6 +212,7 @@ export const initialAlerts: AlertRule[] = [
     holdWindow: '15 min',
     services: [svc('Wave-CHN-SIN')],
     history: [
+      h({ service: 'Wave-CHN-SIN', status: 'active', observed: '1', raisedAt: '2026-07-28T07:03:00' }),
       h({
         service: 'Wave-CHN-SIN',
         status: 'resolved',
@@ -231,6 +237,7 @@ export const initialAlerts: AlertRule[] = [
     flapEventType: 'flap',
     services: [svc('Wave-BLR-MUM')],
     history: [
+      h({ service: 'Wave-BLR-MUM', status: 'active', observed: '17', raisedAt: '2026-07-28T09:29:00' }),
       h({
         service: 'Wave-BLR-MUM',
         status: 'resolved',
@@ -265,5 +272,138 @@ export const initialAlerts: AlertRule[] = [
     createdAt: '2025-11-30T10:00:00',
     channels: ['In-app'],
     recipients: [],
+  },
+  {
+    id: 'ar-011',
+    ruleName: 'Packet Rate Surge',
+    metricKey: 'packets',
+    severity: 'Info',
+    aggregation: 'MAX',
+    comparator: '>',
+    threshold: '500000',
+    holdWindow: '15 min',
+    services: [svc('VC-Chennai-01')],
+    history: [
+      h({
+        service: 'VC-Chennai-01',
+        status: 'active',
+        observed: '612,000 pps',
+        raisedAt: '2026-07-28T08:00:00',
+      }),
+      h({
+        service: 'VC-Chennai-01',
+        status: 'resolved',
+        observed: '540,000 pps',
+        raisedAt: '2026-06-15T13:00:00',
+        clearedAt: '2026-06-15T13:40:00',
+      }),
+    ],
+    createdAt: '2025-11-10T10:00:00',
+    channels: ['In-app'],
+    recipients: [],
+  },
+  {
+    id: 'ar-012',
+    ruleName: 'Low Transmit Power',
+    metricKey: 'power_tx',
+    severity: 'Critical',
+    aggregation: 'MIN',
+    comparator: '<',
+    threshold: '-3',
+    holdWindow: '15 min',
+    services: [svc('Port-PUN-03')],
+    history: [
+      h({ service: 'Port-PUN-03', status: 'active', observed: '-3.6 dBm', raisedAt: '2026-07-28T09:35:00' }),
+      h({
+        service: 'Port-PUN-03',
+        status: 'resolved',
+        observed: '-3.4 dBm',
+        raisedAt: '2025-10-25T09:00:00',
+        clearedAt: '2025-10-25T09:35:00',
+      }),
+    ],
+    createdAt: '2025-10-20T10:00:00',
+    channels: ['In-app', 'Email'],
+    recipients: [rec('alex.morgan@example.com')],
+  },
+  {
+    id: 'ar-013',
+    ruleName: 'Low Receive Power',
+    metricKey: 'power_rx',
+    severity: 'Critical',
+    aggregation: 'MIN',
+    comparator: '<',
+    threshold: '-14',
+    holdWindow: '15 min',
+    services: [svc('Port-MUM-MB1-A')],
+    history: [
+      h({
+        service: 'Port-MUM-MB1-A',
+        status: 'active',
+        observed: '-15.2 dBm',
+        raisedAt: '2026-07-28T06:00:00',
+      }),
+      h({
+        service: 'Port-MUM-MB1-A',
+        status: 'resolved',
+        observed: '-14.6 dBm',
+        raisedAt: '2025-09-18T11:00:00',
+        clearedAt: '2025-09-18T11:25:00',
+      }),
+    ],
+    createdAt: '2025-10-05T10:00:00',
+    channels: ['In-app'],
+    recipients: [],
+  },
+  {
+    id: 'ar-014',
+    ruleName: 'Protection Switch Over',
+    metricKey: 'flaps',
+    severity: 'Critical',
+    aggregation: 'COUNT',
+    comparator: '>',
+    threshold: '10',
+    holdWindow: '15 min',
+    flapEventType: 'switchover',
+    switchoverLocation: true,
+    services: [svc('Wave-DEL-HYD')],
+    history: [
+      h({ service: 'Wave-DEL-HYD', status: 'active', observed: '1', raisedAt: '2026-07-28T10:40:00' }),
+      h({
+        service: 'Wave-DEL-HYD',
+        status: 'resolved',
+        observed: '1',
+        raisedAt: '2026-07-08T16:15:00',
+        clearedAt: '2026-07-08T16:52:00',
+      }),
+    ],
+    createdAt: '2025-09-22T10:00:00',
+    channels: ['In-app', 'Email'],
+    recipients: [rec('noc-team@example.com')],
+  },
+  {
+    id: 'ar-015',
+    ruleName: 'Full Path Outage',
+    metricKey: 'flaps',
+    severity: 'Critical',
+    aggregation: 'COUNT',
+    comparator: '>',
+    threshold: '10',
+    holdWindow: '15 min',
+    flapEventType: 'outage',
+    services: [svc('Wave-CHN-SIN')],
+    history: [
+      h({ service: 'Wave-CHN-SIN', status: 'active', observed: '1', raisedAt: '2026-07-28T11:05:00' }),
+      h({
+        service: 'Wave-CHN-SIN',
+        status: 'resolved',
+        observed: '1',
+        raisedAt: '2026-06-30T02:10:00',
+        clearedAt: '2026-06-30T02:48:00',
+      }),
+    ],
+    createdAt: '2025-09-15T10:00:00',
+    channels: ['In-app', 'Email'],
+    recipients: [rec('ops-desk@example.com'), rec('noc-team@example.com')],
   },
 ];
