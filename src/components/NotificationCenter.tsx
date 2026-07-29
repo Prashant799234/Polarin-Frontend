@@ -160,7 +160,7 @@ export default function NotificationCenter({ alerts, onViewAlert, onToast, onClo
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-none items-center justify-between border-b border-secondary-2 px-5 py-5">
-          <p className="font-inter text-lg font-extrabold text-secondary-7">Notifications</p>
+          <p className="font-inter text-lg font-extrabold text-secondary-7">Alerts &amp; Notifications</p>
           <Button variant="secondary" icon={<Icon name="close" size={18} />} onClick={handleClose}>
             Close
           </Button>
