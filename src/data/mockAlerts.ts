@@ -228,8 +228,7 @@ export const initialAlerts: AlertRule[] = [
     comparator: '>',
     threshold: '12',
     holdWindow: '30 min',
-    flapEvents: { switchover: true, flap: true, outage: true },
-    switchoverLocation: true,
+    flapEventType: 'flap',
     services: [svc('Wave-BLR-MUM')],
     history: [
       h({

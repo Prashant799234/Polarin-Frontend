@@ -12,6 +12,7 @@ export interface MetricDef {
   direction: Direction;
   comparator: '<' | '>' | '=';
   defaultThreshold: string;
+  defaultAggregation: string;
   severity: Severity;
   products: ProductFamily[];
 }
@@ -45,11 +46,7 @@ export interface Recipient {
   invited?: boolean;
 }
 
-export interface FlapEvents {
-  switchover: boolean;
-  flap: boolean;
-  outage: boolean;
-}
+export type FlapEventType = 'switchover' | 'flap' | 'outage';
 
 export interface AlertRule {
   id: string;
@@ -66,6 +63,6 @@ export interface AlertRule {
   channels: NotifyChannel[];
   recipients: Recipient[];
   slaTier?: SlaTier;
-  flapEvents?: FlapEvents;
+  flapEventType?: FlapEventType;
   switchoverLocation?: boolean;
 }

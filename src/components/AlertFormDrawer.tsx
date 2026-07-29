@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { AlertRule, FlapEvents, NotifyChannel, Recipient, SlaTier } from '../types';
+import type { AlertRule, FlapEventType, NotifyChannel, Recipient, SlaTier } from '../types';
 import Button from './Button';
 import Icon from './Icon';
 import Toggle from './Toggle';
 import {
-  AGGREGATIONS,
   CURRENT_USER,
   HOLD_WINDOWS,
   NOTIFY_CHANNELS,
@@ -33,13 +32,10 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
   const [ruleName, setRuleName] = useState(initial?.ruleName ?? '');
   const [metricKey, setMetricKey] = useState(initial?.metricKey ?? metricCatalog[0].key);
   const [severity, setSeverity] = useState(initial?.severity ?? metricByKey(metricCatalog[0].key).severity);
-  const [aggregation, setAggregation] = useState(initial?.aggregation ?? 'AVG');
   const [threshold, setThreshold] = useState(initial?.threshold ?? metricCatalog[0].defaultThreshold);
   const [holdWindow, setHoldWindow] = useState(initial?.holdWindow ?? '15 min');
   const [slaTier, setSlaTier] = useState<SlaTier>(initial?.slaTier ?? 'expected');
-  const [flapEvents, setFlapEvents] = useState<FlapEvents>(
-    initial?.flapEvents ?? { switchover: true, flap: true, outage: true },
-  );
+  const [flapEventType, setFlapEventType] = useState<FlapEventType>(initial?.flapEventType ?? 'flap');
   const [switchoverLocation, setSwitchoverLocation] = useState(initial?.switchoverLocation ?? true);
   const [selectedServices, setSelectedServices] = useState<string[]>(initial?.services.map((s) => s.name) ?? []);
   const [familyFilter, setFamilyFilter] = useState<'all' | 'VC' | 'Wave' | 'Port'>('all');
@@ -106,10 +102,6 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
     setSelectedServices((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
   };
 
-  const toggleFlapEvent = (key: keyof FlapEvents) => {
-    setFlapEvents((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
   const q = recipientQuery.trim().toLowerCase();
   const directoryMatches = userDirectory.filter(
     (u) => !recipients.some((r) => r.email === u.email) && (u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)),
@@ -128,12 +120,9 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
     setRecipients((prev) => prev.filter((r) => r.email !== email));
   };
 
-  const flapAnySelected = flapEvents.switchover || flapEvents.flap || flapEvents.outage;
-
   const missingReasons: string[] = [];
   if (ruleName.trim().length === 0) missingReasons.push('a rule name');
-  if (isFlaps && !flapAnySelected) missingReasons.push('at least one Flaps event');
-  if (isFlaps && flapEvents.flap && threshold.trim().length === 0) missingReasons.push('a flap count');
+  if (isFlaps && flapEventType === 'flap' && threshold.trim().length === 0) missingReasons.push('a flap count');
   if (!isFlaps && threshold.trim().length === 0) missingReasons.push('a threshold value');
   if (isAvailability && slaTier === 'custom' && threshold.trim().length === 0) missingReasons.push('a custom threshold');
   if (selectedServices.length === 0) missingReasons.push('at least one service');
@@ -157,7 +146,7 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
       ruleName: ruleName.trim(),
       metricKey,
       severity,
-      aggregation: isFlaps ? 'COUNT' : aggregation,
+      aggregation: metric.defaultAggregation,
       comparator: metric.comparator,
       threshold: resolvedThreshold,
       holdWindow,
@@ -165,8 +154,8 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
       channels,
       recipients,
       slaTier: isAvailability ? slaTier : undefined,
-      flapEvents: isFlaps ? flapEvents : undefined,
-      switchoverLocation: isFlaps ? switchoverLocation : undefined,
+      flapEventType: isFlaps ? flapEventType : undefined,
+      switchoverLocation: isFlaps && flapEventType === 'switchover' ? switchoverLocation : undefined,
     });
   };
 
@@ -281,92 +270,71 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
                 )}
               </div>
             ) : isFlaps ? (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
                 <label className={labelClass}>Condition</label>
-                <p className="text-xs text-secondary-6">Turn on the events you care about.</p>
+                <p className="text-xs text-secondary-6">Pick the one event this alert should watch for.</p>
+                <select
+                  value={flapEventType}
+                  onChange={(e) => setFlapEventType(e.target.value as FlapEventType)}
+                  className={`${fieldClass} cursor-pointer`}
+                >
+                  <option value="switchover">Switch Over — traffic moved to the secondary path</option>
+                  <option value="flap">Flap — the link is bouncing up and down repeatedly</option>
+                  <option value="outage">Outage — both paths are down</option>
+                </select>
 
-                <div className={`rounded-xl border p-3 ${flapEvents.switchover ? 'border-primary-4 bg-primary-2/40' : 'border-secondary-3'}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-bold text-secondary-7">Switch Over</p>
-                      <p className="text-xs text-secondary-6">Traffic moved to the secondary path — awareness only.</p>
-                    </div>
-                    <Toggle on={flapEvents.switchover} onToggle={() => toggleFlapEvent('switchover')} label="Switch Over" />
-                  </div>
-                  {flapEvents.switchover && (
-                    <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs text-secondary-7">
-                      <input
-                        type="checkbox"
-                        checked={switchoverLocation}
-                        onChange={() => setSwitchoverLocation((v) => !v)}
-                        className="accent-primary-4"
-                      />
-                      Notify with location &amp; time of the switchover
-                    </label>
-                  )}
-                </div>
+                {flapEventType === 'switchover' && (
+                  <label className="mt-1 flex cursor-pointer items-center gap-2 text-sm text-secondary-7">
+                    <input
+                      type="checkbox"
+                      checked={switchoverLocation}
+                      onChange={() => setSwitchoverLocation((v) => !v)}
+                      className="accent-primary-4"
+                    />
+                    Notify with location &amp; time of the switchover
+                  </label>
+                )}
 
-                <div className={`rounded-xl border p-3 ${flapEvents.flap ? 'border-primary-4 bg-primary-2/40' : 'border-secondary-3'}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-bold text-secondary-7">Flap</p>
-                      <p className="text-xs text-secondary-6">The link is bouncing up and down repeatedly.</p>
-                    </div>
-                    <Toggle on={flapEvents.flap} onToggle={() => toggleFlapEvent('flap')} label="Flap" />
+                {flapEventType === 'flap' && (
+                  <div className="mt-1 flex items-center gap-2 text-sm text-secondary-7">
+                    Exceeds
+                    <input
+                      className={`${fieldClass} w-[80px]`}
+                      value={threshold}
+                      onChange={(e) => setThreshold(e.target.value)}
+                    />
+                    times in
+                    <select
+                      value={holdWindow}
+                      onChange={(e) => setHoldWindow(e.target.value)}
+                      className={`${fieldClass} w-[110px] cursor-pointer`}
+                    >
+                      {HOLD_WINDOWS.map((w) => (
+                        <option key={w}>{w}</option>
+                      ))}
+                    </select>
                   </div>
-                  {flapEvents.flap && (
-                    <div className="mt-2 flex items-center gap-2 text-sm text-secondary-7">
-                      Exceeds
-                      <input
-                        className={`${fieldClass} w-[80px]`}
-                        value={threshold}
-                        onChange={(e) => setThreshold(e.target.value)}
-                      />
-                      times in
-                      <select
-                        value={holdWindow}
-                        onChange={(e) => setHoldWindow(e.target.value)}
-                        className={`${fieldClass} w-[110px] cursor-pointer`}
-                      >
-                        {HOLD_WINDOWS.map((w) => (
-                          <option key={w}>{w}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
+                )}
 
-                <div className={`rounded-xl border p-3 ${flapEvents.outage ? 'border-primary-4 bg-primary-2/40' : 'border-secondary-3'}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-bold text-secondary-7">Outage</p>
-                      <p className="text-xs text-secondary-6">Both paths are down — notified immediately.</p>
-                    </div>
-                    <Toggle on={flapEvents.outage} onToggle={() => toggleFlapEvent('outage')} label="Outage" />
-                  </div>
-                </div>
-                {!flapAnySelected && <p className="text-xs font-bold text-red-5">Turn on at least one event.</p>}
+                {flapEventType === 'outage' && (
+                  <p className="mt-1 text-xs text-secondary-6">
+                    Notified immediately — both paths down needs no extra setup.
+                  </p>
+                )}
               </div>
             ) : (
               <div className="flex flex-col gap-1.5">
                 <label className={labelClass}>Condition</label>
+                <p className="text-xs text-secondary-6">Just enter the one number that should trigger this alert.</p>
                 <div className="flex items-center gap-2">
-                  <select
-                    value={aggregation}
-                    onChange={(e) => setAggregation(e.target.value)}
-                    className={`${fieldClass} w-[90px] cursor-pointer font-mono`}
-                  >
-                    {AGGREGATIONS.map((a) => (
-                      <option key={a}>{a}</option>
-                    ))}
-                  </select>
-                  <span className="whitespace-nowrap text-sm text-secondary-7">
+                  <span className="whitespace-nowrap rounded-lg border border-secondary-3 bg-secondary-1 px-3 py-2 text-sm font-bold text-secondary-7">
                     {metric.label} {metric.direction}
                   </span>
                   <input
-                    className={`${fieldClass} w-[100px]`}
+                    className={`${fieldClass} w-[120px]`}
                     value={threshold}
                     onChange={(e) => setThreshold(e.target.value)}
+                    placeholder={metric.defaultThreshold}
                   />
                   <span className="whitespace-nowrap text-sm text-secondary-6">{metric.unit || '—'}</span>
                 </div>
