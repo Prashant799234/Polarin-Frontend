@@ -1,4 +1,5 @@
 export interface PlatformNotification {
+  id: string;
   icon: string;
   kind: 'info' | 'warning';
   title: string;
@@ -13,6 +14,7 @@ export interface PlatformNotification {
 // the rule-based network alerts, and not tied to any live customer data.
 export const platformNotifications: PlatformNotification[] = [
   {
+    id: 'pn-1',
     icon: 'build',
     kind: 'info',
     title: 'Planned maintenance',
@@ -23,6 +25,7 @@ export const platformNotifications: PlatformNotification[] = [
     actions: ['View service'],
   },
   {
+    id: 'pn-2',
     icon: 'description',
     kind: 'info',
     title: 'Order saved in Design State',
@@ -32,6 +35,7 @@ export const platformNotifications: PlatformNotification[] = [
     actions: ['Review order'],
   },
   {
+    id: 'pn-3',
     icon: 'credit_card',
     kind: 'warning',
     title: 'Subscription expiring soon',

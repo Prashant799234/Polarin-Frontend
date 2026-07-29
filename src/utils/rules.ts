@@ -33,6 +33,7 @@ export function entriesForService(rule: AlertRule, serviceName: string) {
 }
 
 export interface AlertNotificationItem {
+  id: string;
   rule: AlertRule;
   service: string;
   status: 'active' | 'resolved';
@@ -52,6 +53,7 @@ export function alertNotificationItems(alerts: AlertRule[]): {
   alerts.forEach((rule) => {
     rule.history.forEach((h) => {
       items.push({
+        id: h.id,
         rule,
         service: h.service,
         status: h.status,

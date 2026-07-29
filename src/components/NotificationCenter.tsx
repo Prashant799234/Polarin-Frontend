@@ -13,14 +13,26 @@ interface Props {
   onViewAlert: (rule: AlertRule) => void;
   onToast: (message: string, tone?: ToastTone) => void;
   onClose: () => void;
+  readIds: Set<string>;
+  onMarkRead: (ids: string[]) => void;
 }
 
 type NcTab = 'alerts' | 'notifications';
+type NcFilter = 'all' | 'unread';
 
 const tabClass = (active: boolean) =>
   `flex items-center gap-1.5 rounded-t-lg px-3 py-2.5 text-sm font-bold transition-colors duration-150 ${
     active ? 'border-b-2 border-primary-5 text-primary-5' : 'border-b-2 border-transparent text-secondary-6 hover:text-secondary-7'
   }`;
+
+const filterClass = (active: boolean) =>
+  `rounded-full px-3 py-1 text-xs font-bold transition-colors duration-150 ${
+    active ? 'bg-primary-5 text-white' : 'text-secondary-6 hover:bg-secondary-1'
+  }`;
+
+function UnreadDot() {
+  return <span className="size-2 flex-none rounded-full bg-red-4" aria-label="Unread" />;
+}
 
 function CountBadge({ count, tone = 'critical' }: { count: number; tone?: 'critical' | 'neutral' }) {
   return (
@@ -36,10 +48,12 @@ function CountBadge({ count, tone = 'critical' }: { count: number; tone?: 'criti
 
 function AlertCard({
   item,
+  unread,
   onViewAlert,
   onClose,
 }: {
   item: AlertNotificationItem;
+  unread: boolean;
   onViewAlert: (rule: AlertRule) => void;
   onClose: () => void;
 }) {
@@ -65,13 +79,16 @@ function AlertCard({
           <p className="text-sm font-bold text-secondary-7">
             {active ? `${item.rule.severity}: ${eventLabel} on ${item.service}` : `Returned to normal: ${item.service}`}
           </p>
-          {active ? (
-            <SeverityBadge severity={item.rule.severity} className="flex-none" />
-          ) : (
-            <span className="inline-flex flex-none items-center justify-center rounded-3xl border border-primary-3 bg-primary-2 px-2 py-1 text-[10px] text-primary-5">
-              Cleared
-            </span>
-          )}
+          <div className="flex flex-none items-center gap-2">
+            {active ? (
+              <SeverityBadge severity={item.rule.severity} className="flex-none" />
+            ) : (
+              <span className="inline-flex flex-none items-center justify-center rounded-3xl border border-primary-3 bg-primary-2 px-2 py-1 text-[10px] text-primary-5">
+                Cleared
+              </span>
+            )}
+            {unread && <UnreadDot />}
+          </div>
         </div>
         <p className="text-xs text-secondary-6">
           {active
@@ -96,8 +113,9 @@ function AlertCard({
   );
 }
 
-export default function NotificationCenter({ alerts, onViewAlert, onToast, onClose }: Props) {
+export default function NotificationCenter({ alerts, onViewAlert, onToast, onClose, readIds, onMarkRead }: Props) {
   const [tab, setTab] = useState<NcTab>('alerts');
+  const [filter, setFilter] = useState<NcFilter>('all');
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -111,13 +129,22 @@ export default function NotificationCenter({ alerts, onViewAlert, onToast, onClo
   };
 
   const { active, resolved } = alertNotificationItems(alerts);
-  const alertCount = active.length;
-  const notifCount = platformNotifications.length;
+  const alertUnreadIds = [...active, ...resolved].filter((i) => !readIds.has(i.id)).map((i) => i.id);
+  const notifUnreadIds = platformNotifications.filter((n) => !readIds.has(n.id)).map((n) => n.id);
+  const alertUnreadCount = alertUnreadIds.length;
+  const notifUnreadCount = notifUnreadIds.length;
+
+  const visibleActive = filter === 'unread' ? active.filter((i) => !readIds.has(i.id)) : active;
+  const visibleResolved = filter === 'unread' ? resolved.filter((i) => !readIds.has(i.id)) : resolved;
+  const visibleNotifs = filter === 'unread' ? platformNotifications.filter((n) => !readIds.has(n.id)) : platformNotifications;
 
   const byDay: Record<string, typeof platformNotifications> = {};
-  platformNotifications.forEach((n) => {
+  visibleNotifs.forEach((n) => {
     (byDay[n.day] ??= []).push(n);
   });
+
+  const currentUnreadCount = tab === 'alerts' ? alertUnreadCount : notifUnreadCount;
+  const handleMarkAllRead = () => onMarkRead(tab === 'alerts' ? alertUnreadIds : notifUnreadIds);
 
   return (
     <div
@@ -141,11 +168,31 @@ export default function NotificationCenter({ alerts, onViewAlert, onToast, onClo
 
         <div className="flex flex-none items-center gap-4 border-b border-secondary-2 px-5">
           <button type="button" onClick={() => setTab('alerts')} className={tabClass(tab === 'alerts')}>
-            Alerts {alertCount > 0 && <CountBadge count={alertCount} />}
+            Alerts {alertUnreadCount > 0 && <CountBadge count={alertUnreadCount} />}
           </button>
           <button type="button" onClick={() => setTab('notifications')} className={tabClass(tab === 'notifications')}>
-            Notifications <CountBadge count={notifCount} tone="neutral" />
+            Notifications {notifUnreadCount > 0 && <CountBadge count={notifUnreadCount} tone="neutral" />}
           </button>
+        </div>
+
+        <div className="flex flex-none items-center justify-between border-b border-secondary-2 px-5 py-2">
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => setFilter('all')} className={filterClass(filter === 'all')}>
+              All
+            </button>
+            <button type="button" onClick={() => setFilter('unread')} className={filterClass(filter === 'unread')}>
+              Unread{currentUnreadCount > 0 ? ` (${currentUnreadCount})` : ''}
+            </button>
+          </div>
+          {currentUnreadCount > 0 && (
+            <button
+              type="button"
+              onClick={handleMarkAllRead}
+              className="text-xs font-bold text-primary-5 hover:underline"
+            >
+              Mark All as Read
+            </button>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
@@ -159,7 +206,7 @@ export default function NotificationCenter({ alerts, onViewAlert, onToast, onClo
                 </p>
               </div>
 
-              {alertCount === 0 && resolved.length === 0 ? (
+              {active.length === 0 && resolved.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 py-16 text-center">
                   <Icon name="check_circle" size={32} filled className="text-primary-5" />
                   <p className="text-sm font-bold text-secondary-7">No alerts</p>
@@ -168,16 +215,19 @@ export default function NotificationCenter({ alerts, onViewAlert, onToast, onClo
                     triggered.
                   </p>
                 </div>
+              ) : visibleActive.length === 0 && visibleResolved.length === 0 ? (
+                <p className="py-16 text-center text-sm text-secondary-6">No unread alerts. You're all caught up.</p>
               ) : (
                 <>
-                  {active.length > 0 && (
+                  {visibleActive.length > 0 && (
                     <div className="flex flex-col gap-2">
                       <p className="text-xs font-bold uppercase tracking-wide text-secondary-6">Active now</p>
                       <div className="flex flex-col gap-2">
-                        {active.map((item, i) => (
+                        {visibleActive.map((item) => (
                           <AlertCard
-                            key={`${item.rule.id}-${item.service}-${i}`}
+                            key={item.id}
                             item={item}
+                            unread={!readIds.has(item.id)}
                             onViewAlert={onViewAlert}
                             onClose={handleClose}
                           />
@@ -185,16 +235,17 @@ export default function NotificationCenter({ alerts, onViewAlert, onToast, onClo
                       </div>
                     </div>
                   )}
-                  {resolved.length > 0 && (
+                  {visibleResolved.length > 0 && (
                     <div className="flex flex-col gap-2">
                       <p className="text-xs font-bold uppercase tracking-wide text-secondary-6">
                         Recently returned to normal
                       </p>
                       <div className="flex flex-col gap-2">
-                        {resolved.map((item, i) => (
+                        {visibleResolved.map((item) => (
                           <AlertCard
-                            key={`${item.rule.id}-${item.service}-${i}`}
+                            key={item.id}
                             item={item}
+                            unread={!readIds.has(item.id)}
                             onViewAlert={onViewAlert}
                             onClose={handleClose}
                           />
@@ -215,12 +266,19 @@ export default function NotificationCenter({ alerts, onViewAlert, onToast, onClo
                 </p>
               </div>
 
-              {Object.keys(byDay).map((day) => (
+              {platformNotifications.length === 0 ? (
+                <p className="py-16 text-center text-sm text-secondary-6">No notifications.</p>
+              ) : Object.keys(byDay).length === 0 ? (
+                <p className="py-16 text-center text-sm text-secondary-6">
+                  No unread notifications. You're all caught up.
+                </p>
+              ) : (
+                Object.keys(byDay).map((day) => (
                 <div key={day} className="flex flex-col gap-2">
                   <p className="text-xs font-bold uppercase tracking-wide text-secondary-6">{day}</p>
                   <div className="flex flex-col gap-2">
-                    {byDay[day].map((n, i) => (
-                      <div key={i} className="flex gap-3 rounded-2xl border border-secondary-2 p-4">
+                    {byDay[day].map((n) => (
+                      <div key={n.id} className="flex gap-3 rounded-2xl border border-secondary-2 p-4">
                         <div
                           className={`flex size-8 flex-none items-center justify-center rounded-full ${
                             n.kind === 'warning' ? 'bg-orange-2' : 'bg-blue-2'
@@ -231,13 +289,16 @@ export default function NotificationCenter({ alerts, onViewAlert, onToast, onClo
                         <div className="flex flex-1 flex-col gap-1.5">
                           <div className="flex items-start justify-between gap-2">
                             <p className="text-sm font-bold text-secondary-7">{n.title}</p>
-                            <span
-                              className={`inline-flex flex-none items-center justify-center rounded-3xl border px-2 py-1 text-[10px] ${
-                                n.kind === 'warning' ? 'border-orange-3 bg-orange-2 text-orange-5' : 'border-blue-3 bg-blue-2 text-blue-5'
-                              }`}
-                            >
-                              {n.kind === 'warning' ? 'Warning' : 'Info'}
-                            </span>
+                            <div className="flex flex-none items-center gap-2">
+                              <span
+                                className={`inline-flex flex-none items-center justify-center rounded-3xl border px-2 py-1 text-[10px] ${
+                                  n.kind === 'warning' ? 'border-orange-3 bg-orange-2 text-orange-5' : 'border-blue-3 bg-blue-2 text-blue-5'
+                                }`}
+                              >
+                                {n.kind === 'warning' ? 'Warning' : 'Info'}
+                              </span>
+                              {!readIds.has(n.id) && <UnreadDot />}
+                            </div>
                           </div>
                           <p className="text-xs text-secondary-6">{n.time}</p>
                           <p className="text-sm text-secondary-7">
@@ -268,7 +329,8 @@ export default function NotificationCenter({ alerts, onViewAlert, onToast, onClo
                     ))}
                   </div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           )}
         </div>

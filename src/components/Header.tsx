@@ -17,7 +17,13 @@ interface Props {
 
 export default function Header({ alerts, onViewAlert, onToast }: Props) {
   const [showNotifications, setShowNotifications] = useState(false);
+  // Lives here, not inside NotificationCenter, so read state survives closing and reopening the panel.
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const { active } = alertNotificationItems(alerts);
+
+  const markRead = (ids: string[]) => {
+    setReadIds((prev) => new Set([...prev, ...ids]));
+  };
 
   return (
     <header className="flex h-16 w-full items-center justify-between border-b-[0.5px] border-secondary-3 bg-white px-6">
@@ -78,6 +84,8 @@ export default function Header({ alerts, onViewAlert, onToast }: Props) {
           onViewAlert={onViewAlert}
           onToast={onToast}
           onClose={() => setShowNotifications(false)}
+          readIds={readIds}
+          onMarkRead={markRead}
         />
       )}
     </header>
