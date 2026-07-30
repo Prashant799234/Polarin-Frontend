@@ -22,6 +22,9 @@ export interface CatalogService {
   family: ProductFamily;
   capacity: string;
   location: string;
+  // Protection route a Wave service fails over to on Switch Over — undefined for
+  // services that don't have automatic path protection (VC, Port).
+  secondaryPath?: string;
 }
 
 export interface AlertService {

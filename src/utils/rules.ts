@@ -96,13 +96,19 @@ export function alertMessageBody(item: AlertNotificationItem): string {
   const metric = metricByKey(item.rule.metricKey);
 
   if (item.rule.metricKey === 'flaps') {
-    const location = catalogServiceByName(item.service)?.location;
+    const catalogService = catalogServiceByName(item.service);
+    const location = catalogService?.location;
+    const secondaryPath = catalogService?.secondaryPath;
     const withLocation = item.rule.switchoverLocation && location ? ` at ${location}` : '';
+    const activePathDetail =
+      item.rule.switchoverLocation && secondaryPath && location
+        ? ` — now routed via ${secondaryPath}, instead of the direct ${location} path`
+        : withLocation;
 
     switch (item.rule.flapEventType) {
       case 'switchover':
         return active
-          ? `Traffic on ${item.service} switched to the secondary path${withLocation}. We're monitoring it — you'll get one message when it's confirmed back on the primary path.`
+          ? `Traffic on ${item.service} switched to the secondary path${activePathDetail}. We're monitoring it — you'll get one message when it's confirmed back on the primary path.`
           : `${item.service} has switched back to the primary path${withLocation}. No action needed.`;
       case 'outage':
         return active
