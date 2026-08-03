@@ -9,11 +9,22 @@ import {
   NOTIFY_CHANNELS,
   PRODUCT_FAMILIES,
   SLA_TIERS,
+  familyForMetric,
+  familyProducts,
   metricByKey,
   metricCatalog,
+  metricFamilies,
   serviceCatalog,
   userDirectory,
 } from '../data/catalog';
+
+// Labels the second dropdown when a metric family has more than one variant —
+// "Direction" for In/Out pairs, "Type" for Power's Transmitted/Received/Levels.
+const FAMILY_VARIANT_FIELD_LABEL: Record<string, string> = {
+  traffic: 'Direction',
+  packets: 'Direction',
+  power: 'Type',
+};
 
 interface Props {
   mode: 'create' | 'edit';
@@ -69,6 +80,7 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
   };
 
   const metric = metricByKey(metricKey);
+  const currentFamily = familyForMetric(metricKey);
   const isAvailability = metricKey === 'availability';
   const isFlaps = metricKey === 'flaps';
 
@@ -204,17 +216,36 @@ export default function AlertFormDrawer({ mode, initial, onClose, onSave }: Prop
               <div className="flex flex-1 flex-col gap-1.5">
                 <label className={labelClass}>Metric</label>
                 <select
-                  value={metricKey}
-                  onChange={(e) => pickMetric(e.target.value)}
+                  value={currentFamily.key}
+                  onChange={(e) => {
+                    const fam = metricFamilies.find((f) => f.key === e.target.value)!;
+                    pickMetric(fam.members[0].key);
+                  }}
                   className={`${fieldClass} cursor-pointer`}
                 >
-                  {metricCatalog.map((m) => (
-                    <option key={m.key} value={m.key}>
-                      {m.label} ({m.products.join(' / ')})
+                  {metricFamilies.map((f) => (
+                    <option key={f.key} value={f.key}>
+                      {f.label} ({familyProducts(f).join(' / ')})
                     </option>
                   ))}
                 </select>
               </div>
+              {currentFamily.members.length > 1 && (
+                <div className="flex w-[130px] flex-col gap-1.5">
+                  <label className={labelClass}>{FAMILY_VARIANT_FIELD_LABEL[currentFamily.key] ?? 'Type'}</label>
+                  <select
+                    value={metricKey}
+                    onChange={(e) => pickMetric(e.target.value)}
+                    className={`${fieldClass} cursor-pointer`}
+                  >
+                    {currentFamily.members.map((m) => (
+                      <option key={m.key} value={m.key}>
+                        {m.variantLabel ?? m.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="flex w-[140px] flex-col gap-1.5">
                 <label className={labelClass}>Severity</label>
                 <select

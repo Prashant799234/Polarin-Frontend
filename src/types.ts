@@ -15,6 +15,13 @@ export interface MetricDef {
   defaultAggregation: string;
   severity: Severity;
   products: ProductFamily[];
+  // Groups metrics that are really the same reading split by direction/type
+  // (Traffic In vs Out, Power Transmitted vs Received vs Levels) under one
+  // entry in the Metric dropdown, with a second dropdown for the variant.
+  // Metrics with no siblings can omit these — they default to their own key/label.
+  familyKey?: string;
+  familyLabel?: string;
+  variantLabel?: string;
 }
 
 export interface CatalogService {

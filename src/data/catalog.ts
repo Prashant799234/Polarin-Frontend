@@ -29,9 +29,12 @@ export const metricCatalog: MetricDef[] = [
     products: ['VC', 'Wave'],
   },
   {
-    key: 'traffic',
-    label: 'Traffic In/Out',
-    description: 'Bandwidth in use — alerts on whichever direction is higher.',
+    key: 'traffic_in',
+    label: 'Traffic In',
+    familyKey: 'traffic',
+    familyLabel: 'Traffic',
+    variantLabel: 'In',
+    description: 'Inbound bandwidth in use.',
     unit: '%',
     direction: 'rises above',
     comparator: '>',
@@ -41,9 +44,42 @@ export const metricCatalog: MetricDef[] = [
     products: ['Port', 'VC'],
   },
   {
-    key: 'packets',
-    label: 'Packets In/Out',
-    description: 'Frames per second — alerts on whichever direction is higher.',
+    key: 'traffic_out',
+    label: 'Traffic Out',
+    familyKey: 'traffic',
+    familyLabel: 'Traffic',
+    variantLabel: 'Out',
+    description: 'Outbound bandwidth in use.',
+    unit: '%',
+    direction: 'rises above',
+    comparator: '>',
+    defaultThreshold: '80',
+    defaultAggregation: 'MAX',
+    severity: 'Info',
+    products: ['Port', 'VC'],
+  },
+  {
+    key: 'packets_in',
+    label: 'Packets In',
+    familyKey: 'packets',
+    familyLabel: 'Packets',
+    variantLabel: 'In',
+    description: 'Inbound frames per second.',
+    unit: 'pps',
+    direction: 'rises above',
+    comparator: '>',
+    defaultThreshold: '500000',
+    defaultAggregation: 'MAX',
+    severity: 'Info',
+    products: ['Port', 'VC'],
+  },
+  {
+    key: 'packets_out',
+    label: 'Packets Out',
+    familyKey: 'packets',
+    familyLabel: 'Packets',
+    variantLabel: 'Out',
+    description: 'Outbound frames per second.',
     unit: 'pps',
     direction: 'rises above',
     comparator: '>',
@@ -67,6 +103,9 @@ export const metricCatalog: MetricDef[] = [
   {
     key: 'power_tx',
     label: 'Power Transmitted',
+    familyKey: 'power',
+    familyLabel: 'Power',
+    variantLabel: 'Transmitted',
     description: 'Outbound light level on the fibre.',
     unit: 'dBm',
     direction: 'drops below',
@@ -79,6 +118,9 @@ export const metricCatalog: MetricDef[] = [
   {
     key: 'power_rx',
     label: 'Power Received',
+    familyKey: 'power',
+    familyLabel: 'Power',
+    variantLabel: 'Received',
     description: 'Inbound light level on the fibre.',
     unit: 'dBm',
     direction: 'drops below',
@@ -91,6 +133,9 @@ export const metricCatalog: MetricDef[] = [
   {
     key: 'power_levels',
     label: 'Power Levels',
+    familyKey: 'power',
+    familyLabel: 'Power',
+    variantLabel: 'Levels',
     description: 'Optical power level on the wavelength.',
     unit: 'dBm',
     direction: 'drops below',
@@ -151,6 +196,39 @@ export const metricCatalog: MetricDef[] = [
 ];
 
 export const metricByKey = (key: string) => metricCatalog.find((m) => m.key === key)!;
+
+export interface MetricFamily {
+  key: string;
+  label: string;
+  variantLabel?: string;
+  members: MetricDef[];
+}
+
+// Groups metrics that share a familyKey (Traffic In/Out, Packets In/Out, Power
+// Transmitted/Received/Levels) so the form can show one Metric dropdown plus a
+// second dropdown for the specific variant, instead of listing each separately.
+export const metricFamilies: MetricFamily[] = (() => {
+  const order: string[] = [];
+  const groups = new Map<string, MetricDef[]>();
+  metricCatalog.forEach((m) => {
+    const famKey = m.familyKey ?? m.key;
+    if (!groups.has(famKey)) {
+      groups.set(famKey, []);
+      order.push(famKey);
+    }
+    groups.get(famKey)!.push(m);
+  });
+  return order.map((key) => {
+    const members = groups.get(key)!;
+    return { key, label: members[0].familyLabel ?? members[0].label, members };
+  });
+})();
+
+export const familyForMetric = (metricKey: string): MetricFamily =>
+  metricFamilies.find((f) => f.members.some((m) => m.key === metricKey))!;
+
+export const familyProducts = (family: MetricFamily): string[] =>
+  [...new Set(family.members.flatMap((m) => m.products))];
 
 export const HOLD_WINDOWS = ['15 min', '30 min', '45 min', '60 min'];
 

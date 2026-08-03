@@ -53,7 +53,7 @@ export const initialAlerts: AlertRule[] = [
   {
     id: 'ar-002',
     ruleName: 'Core Utilization Warning',
-    metricKey: 'traffic',
+    metricKey: 'traffic_out',
     severity: 'Info',
     aggregation: 'MAX',
     comparator: '>',
@@ -253,7 +253,7 @@ export const initialAlerts: AlertRule[] = [
   {
     id: 'ar-010',
     ruleName: 'Port Bandwidth Saturation',
-    metricKey: 'traffic',
+    metricKey: 'traffic_in',
     severity: 'Info',
     aggregation: 'MAX',
     comparator: '>',
@@ -276,7 +276,7 @@ export const initialAlerts: AlertRule[] = [
   {
     id: 'ar-011',
     ruleName: 'Packet Rate Surge',
-    metricKey: 'packets',
+    metricKey: 'packets_in',
     severity: 'Info',
     aggregation: 'MAX',
     comparator: '>',
